@@ -42,6 +42,7 @@ class Generator:
         self.persona_name = persona
         self.seed = seed
         self.rng = SeededRandom(seed)
+        self.resource_filter = None  # Optional filter for resource types
 
         # Initialize components
         self.resource_factory = ResourceFactory(self.rng)
@@ -75,6 +76,14 @@ class Generator:
             seed: Random seed for deterministic generation
         """
         return cls(persona=persona_name, seed=seed)
+
+    def set_resource_filter(self, resource_types: List[str]):
+        """Set filter for which resource types to include.
+
+        Args:
+            resource_types: List of resource type names to include (e.g., ["Patient", "Condition"])
+        """
+        self.resource_filter = resource_types
 
     def generate(
         self,
@@ -127,7 +136,7 @@ class Generator:
         # Create patient
         patient = self.resource_factory.create_patient(
             patient_def,
-            patient_id=f"patient-{self.rng.uuid()}"
+            patient_id=self.rng.uuid()
         )
         resources.append(patient)
 
@@ -136,6 +145,10 @@ class Generator:
         for rule in rules:
             rule_resources = self._apply_rule(rule, patient)
             resources.extend(rule_resources)
+
+        # Filter resources if filter is set
+        if self.resource_filter:
+            resources = self._filter_resources(resources)
 
         return resources
 
@@ -147,7 +160,7 @@ class Generator:
         demographics = self._generate_demographics()
 
         # Create patient
-        patient_id = f"patient-{self.rng.uuid()}"
+        patient_id = self.rng.uuid()
         patient = self.resource_factory.create_patient(
             demographics,
             patient_id=patient_id
@@ -160,6 +173,10 @@ class Generator:
             if self._evaluate_rule_condition(rule, demographics):
                 rule_resources = self._apply_rule(rule, patient)
                 resources.extend(rule_resources)
+
+        # Filter resources if filter is set
+        if self.resource_filter:
+            resources = self._filter_resources(resources)
 
         return resources
 
@@ -262,3 +279,31 @@ class Generator:
                 "bundle_size": 100
             })
         }
+
+    def _filter_resources(self, resources: List[Any]) -> List[Any]:
+        """Filter resources based on resource_filter.
+
+        Args:
+            resources: List of resources to filter
+
+        Returns:
+            Filtered list of resources
+        """
+        if not self.resource_filter:
+            return resources
+
+        filtered = []
+        for resource in resources:
+            resource_type = resource.__class__.__name__
+            if resource_type in self.resource_filter:
+                filtered.append(resource)
+
+        # Always include Patient if any resources are requested
+        # (since other resources reference the Patient)
+        if filtered and not any(r.__class__.__name__ == "Patient" for r in filtered):
+            for resource in resources:
+                if resource.__class__.__name__ == "Patient":
+                    filtered.insert(0, resource)
+                    break
+
+        return filtered

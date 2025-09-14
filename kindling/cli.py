@@ -71,6 +71,11 @@ from .validator import FHIRValidator
     is_flag=True,
     help="Perform dry run without upload"
 )
+@click.option(
+    "--resources",
+    type=str,
+    help="Comma-separated list of resources to include (e.g., Patient,Condition,Observation)"
+)
 def main(
     profile: Optional[str],
     persona: Optional[str],
@@ -82,7 +87,8 @@ def main(
     list_personas: bool,
     server: Optional[str],
     validate: bool,
-    dry_run: bool
+    dry_run: bool,
+    resources: Optional[str]
 ):
     """Kindling - Lightweight FHIR synthetic data generator.
 
@@ -110,6 +116,12 @@ def main(
         sys.exit(1)
 
     try:
+        # Parse resource filter if provided
+        resource_filter = None
+        if resources:
+            resource_filter = [r.strip() for r in resources.split(',')]
+            click.echo(f"Limiting to resources: {', '.join(resource_filter)}", err=True)
+
         # Create generator
         if profile:
             click.echo(f"Loading profile: {profile}", err=True)
@@ -117,6 +129,10 @@ def main(
         else:
             click.echo(f"Loading persona: {persona}", err=True)
             generator = Generator.from_persona(persona, seed=seed)
+
+        # Apply resource filter if provided
+        if resource_filter:
+            generator.set_resource_filter(resource_filter)
 
         # Generate data
         click.echo(f"Generating {count} patient(s)...", err=True)

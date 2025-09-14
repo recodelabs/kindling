@@ -50,7 +50,7 @@ class ResourceFactory:
         Returns:
             Patient resource
         """
-        patient_id = patient_id or f"patient-{self.rng.uuid()}"
+        patient_id = patient_id or self.rng.uuid()
 
         # Extract patient data
         name_data = patient_def.get("name", {})
@@ -150,7 +150,7 @@ class ResourceFactory:
         Returns:
             Condition resource
         """
-        condition_id = f"condition-{self.rng.uuid()}"
+        condition_id = self.rng.uuid()
 
         # Extract code
         code_data = condition_def.get("code", {})
@@ -207,7 +207,7 @@ class ResourceFactory:
         Returns:
             Observation resource
         """
-        observation_id = f"observation-{self.rng.uuid()}"
+        observation_id = self.rng.uuid()
 
         # Extract code (LOINC)
         loinc_code = observation_def.get("loinc")
@@ -264,7 +264,7 @@ class ResourceFactory:
         Returns:
             MedicationRequest resource
         """
-        med_request_id = f"medicationrequest-{self.rng.uuid()}"
+        med_request_id = self.rng.uuid()
 
         # Extract medication code (RxNorm)
         rxnorm_code = medication_def.get("rxnorm")
@@ -322,7 +322,7 @@ class ResourceFactory:
         Returns:
             Encounter resource
         """
-        encounter_id = f"encounter-{self.rng.uuid()}"
+        encounter_id = self.rng.uuid()
 
         # Encounter class
         encounter_class = Coding(
