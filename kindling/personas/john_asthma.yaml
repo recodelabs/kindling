@@ -1,0 +1,166 @@
+version: "0.1"
+name: john_asthma
+description: "35-year-old male with mild persistent asthma"
+
+patient:
+  identifiers:
+    - system: "http://hospital.example/mrn"
+      value: "MRN-JOHN-001"
+  name:
+    family: "Smith"
+    given: ["John", "Michael"]
+  gender: male
+  birthDate: "1989-07-22"
+  address:
+    line: ["123 Main Street"]
+    city: "Cambridge"
+    state: "MA"
+    postalCode: "02139"
+    country: "US"
+  phone: "617-555-5678"
+  email: "john.smith@example.com"
+
+resources:
+  include:
+    - Patient
+    - Practitioner
+    - Organization
+    - Encounter
+    - Condition
+    - Observation
+    - MedicationRequest
+    - AllergyIntolerance
+
+  rules:
+    - name: asthma_condition
+      when:
+        condition: "true"
+      then:
+        add_conditions:
+          - code:
+              system: "http://snomed.info/sct"
+              value: "426979002"
+              display: "Mild persistent asthma"
+            onset:
+              years_ago: 15
+          - code:
+              system: "http://snomed.info/sct"
+              value: "232353008"
+              display: "Seasonal allergic rhinitis"
+            onset:
+              years_ago: 18
+
+        add_observations:
+          # Peak flow measurements
+          - loinc: "33452-4"
+            display: "Peak expiratory flow rate"
+            range:
+              min: 450
+              max: 550
+            unit: "L/min"
+            times:
+              qty: 12
+              lookback_months: 12
+
+          # FEV1
+          - loinc: "20150-9"
+            display: "FEV1"
+            range:
+              min: 75
+              max: 85
+            unit: "% predicted"
+            times:
+              qty: 4
+              lookback_months: 24
+
+          # Pulse oximetry
+          - loinc: "2708-6"
+            display: "Oxygen saturation"
+            range:
+              min: 96
+              max: 99
+            unit: "%"
+            times:
+              qty: 6
+              lookback_months: 12
+
+          # Respiratory rate
+          - loinc: "9279-1"
+            display: "Respiratory rate"
+            range:
+              min: 14
+              max: 20
+            unit: "/min"
+            times:
+              qty: 6
+              lookback_months: 12
+
+        meds:
+          - rxnorm: "351137"
+            display: "albuterol 90 MCG/ACTUAT Inhalation Aerosol"
+            sig: "Inhale 2 puffs every 4-6 hours as needed for wheezing"
+            frequency: 0.5  # PRN usage
+            adherence:
+              prob: 0.70
+
+          - rxnorm: "616830"
+            display: "fluticasone propionate 110 MCG/ACTUAT Inhalation Aerosol"
+            sig: "Inhale 2 puffs twice daily"
+            frequency: 2
+            adherence:
+              prob: 0.75
+
+          - rxnorm: "896188"
+            display: "montelukast 10 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily in the evening"
+            frequency: 1
+            adherence:
+              prob: 0.85
+
+        allergies:
+          - code:
+              system: "http://snomed.info/sct"
+              value: "762952008"
+              display: "Peanut allergy"
+            criticality: "high"
+            type: "allergy"
+
+          - code:
+              system: "http://snomed.info/sct"
+              value: "419474003"
+              display: "Pet dander allergy"
+            criticality: "low"
+            type: "allergy"
+
+        encounters:
+          # Regular asthma follow-ups
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185345009"
+              display: "Asthma follow-up"
+            class: "AMB"
+            qty: 4
+            spread_months: 24
+
+          # Emergency visits for exacerbations
+          - type:
+              system: "http://snomed.info/sct"
+              code: "183452005"
+              display: "Emergency hospital admission - asthma"
+            class: "EMER"
+            qty: 2
+            spread_months: 24
+            reason: "Asthma exacerbation"
+
+          # Pulmonary function testing
+          - type:
+              system: "http://snomed.info/sct"
+              code: "23426006"
+              display: "Pulmonary function testing"
+            class: "AMB"
+            qty: 2
+            spread_months: 24
+
+output:
+  mode: transaction
+  bundle_size: 100

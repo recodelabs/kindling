@@ -1,0 +1,109 @@
+version: "0.1"
+mode: cohort
+description: "Cohort of patients with Type 2 Diabetes"
+
+demographics:
+  age:
+    min: 45
+    max: 75
+  gender:
+    distribution:
+      female: 0.55
+      male: 0.45
+  location:
+    states: ["MA", "CT", "NH", "VT", "RI", "ME"]
+
+resources:
+  include:
+    - Patient
+    - Practitioner
+    - Organization
+    - Encounter
+    - Condition
+    - Observation
+    - MedicationRequest
+    - Coverage
+
+  rules:
+    - name: diabetes_diagnosis
+      when:
+        condition: "age > 50"
+      then:
+        add_conditions:
+          - code:
+              system: "http://snomed.info/sct"
+              value: "44054006"
+              display: "Type 2 diabetes mellitus"
+            onset:
+              years_ago: 5
+
+    - name: diabetes_complications
+      when:
+        condition: "age > 60"
+      then:
+        add_conditions:
+          - code:
+              system: "http://snomed.info/sct"
+              value: "431855005"
+              display: "Diabetic neuropathy"
+            onset:
+              years_ago: 2
+            probability: 0.3
+
+          - code:
+              system: "http://snomed.info/sct"
+              value: "4855003"
+              display: "Diabetic retinopathy"
+            onset:
+              years_ago: 3
+            probability: 0.25
+
+    - name: diabetes_monitoring
+      when:
+        condition: "true"
+      then:
+        add_observations:
+          - loinc: "4548-4"
+            display: "Hemoglobin A1c"
+            range:
+              min: 6.5
+              max: 9.0
+            unit: "%"
+            times:
+              qty: 4
+              lookback_months: 12
+
+          - loinc: "2339-0"
+            display: "Glucose"
+            range:
+              min: 120
+              max: 180
+            unit: "mg/dL"
+            times:
+              qty: 12
+              lookback_months: 12
+
+    - name: diabetes_medications
+      when:
+        condition: "true"
+      then:
+        meds:
+          - rxnorm: "860975"
+            display: "metformin 1000 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth twice daily"
+            frequency: 2
+            adherence:
+              prob: 0.80
+
+          - rxnorm: "261551"
+            display: "glipizide 5 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily"
+            frequency: 1
+            adherence:
+              prob: 0.75
+            probability: 0.4
+
+output:
+  mode: transaction
+  bundle_size: 100
+  validate: true

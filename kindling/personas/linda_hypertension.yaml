@@ -1,0 +1,246 @@
+version: "0.1"
+name: linda_hypertension
+description: "62-year-old female with hypertension and hyperlipidemia"
+
+patient:
+  identifiers:
+    - system: "http://hospital.example/mrn"
+      value: "MRN-LINDA-001"
+  name:
+    family: "Chen"
+    given: ["Linda", "Wei"]
+  gender: female
+  birthDate: "1962-11-08"
+  address:
+    line: ["789 Elm Avenue"]
+    city: "Brookline"
+    state: "MA"
+    postalCode: "02445"
+    country: "US"
+  phone: "617-555-9012"
+  email: "linda.chen@example.com"
+
+resources:
+  include:
+    - Patient
+    - Practitioner
+    - Organization
+    - Encounter
+    - Condition
+    - Observation
+    - MedicationRequest
+    - Procedure
+    - Coverage
+
+  rules:
+    - name: cardiovascular_conditions
+      when:
+        condition: "true"
+      then:
+        add_conditions:
+          - code:
+              system: "http://snomed.info/sct"
+              value: "38341003"
+              display: "Essential hypertension"
+            onset:
+              years_ago: 10
+
+          - code:
+              system: "http://snomed.info/sct"
+              value: "55822004"
+              display: "Hyperlipidemia"
+            onset:
+              years_ago: 8
+
+          - code:
+              system: "http://snomed.info/sct"
+              value: "414916001"
+              display: "Obesity"
+            onset:
+              years_ago: 15
+
+          - code:
+              system: "http://snomed.info/sct"
+              value: "77176002"
+              display: "Smoker (former)"
+            onset:
+              years_ago: 5
+
+        add_observations:
+          # Blood pressure (controlled on medication)
+          - loinc: "85354-9"
+            display: "Blood pressure panel"
+            components:
+              - loinc: "8480-6"
+                display: "Systolic blood pressure"
+                range:
+                  min: 125
+                  max: 140
+                unit: "mmHg"
+              - loinc: "8462-4"
+                display: "Diastolic blood pressure"
+                range:
+                  min: 78
+                  max: 88
+                unit: "mmHg"
+            times:
+              qty: 12
+              lookback_months: 12
+
+          # Lipid panel
+          - loinc: "2093-3"
+            display: "Total Cholesterol"
+            range:
+              min: 180
+              max: 210
+            unit: "mg/dL"
+            times:
+              qty: 4
+              lookback_months: 24
+
+          - loinc: "2085-9"
+            display: "HDL Cholesterol"
+            range:
+              min: 48
+              max: 55
+            unit: "mg/dL"
+            times:
+              qty: 4
+              lookback_months: 24
+
+          - loinc: "13457-7"
+            display: "LDL Cholesterol"
+            range:
+              min: 100
+              max: 125
+            unit: "mg/dL"
+            times:
+              qty: 4
+              lookback_months: 24
+
+          - loinc: "2571-8"
+            display: "Triglycerides"
+            range:
+              min: 140
+              max: 180
+            unit: "mg/dL"
+            times:
+              qty: 4
+              lookback_months: 24
+
+          # BMI (overweight)
+          - loinc: "39156-5"
+            display: "Body mass index (BMI)"
+            range:
+              min: 28
+              max: 30
+            unit: "kg/m2"
+            times:
+              qty: 4
+              lookback_months: 24
+
+          # Kidney function
+          - loinc: "2160-0"
+            display: "Creatinine"
+            range:
+              min: 0.8
+              max: 1.1
+            unit: "mg/dL"
+            times:
+              qty: 4
+              lookback_months: 24
+
+          - loinc: "33914-3"
+            display: "eGFR"
+            range:
+              min: 65
+              max: 75
+            unit: "mL/min/1.73m2"
+            times:
+              qty: 4
+              lookback_months: 24
+
+        meds:
+          - rxnorm: "314077"
+            display: "lisinopril 20 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily"
+            frequency: 1
+            adherence:
+              prob: 0.92
+
+          - rxnorm: "866426"
+            display: "hydrochlorothiazide 25 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily in the morning"
+            frequency: 1
+            adherence:
+              prob: 0.90
+
+          - rxnorm: "617312"
+            display: "atorvastatin 40 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily at bedtime"
+            frequency: 1
+            adherence:
+              prob: 0.88
+
+          - rxnorm: "308136"
+            display: "amlodipine 5 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily"
+            frequency: 1
+            adherence:
+              prob: 0.91
+
+          - rxnorm: "197361"
+            display: "aspirin 81 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily"
+            frequency: 1
+            adherence:
+              prob: 0.95
+
+        encounters:
+          # Quarterly blood pressure checks
+          - type:
+              system: "http://snomed.info/sct"
+              code: "390848009"
+              display: "Hypertension follow-up"
+            class: "AMB"
+            qty: 8
+            spread_months: 24
+
+          # Annual physical exam
+          - type:
+              system: "http://snomed.info/sct"
+              code: "162673000"
+              display: "General examination"
+            class: "AMB"
+            qty: 2
+            spread_months: 24
+
+          # Cardiology consultation
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185316007"
+              display: "Cardiology consultation"
+            class: "AMB"
+            qty: 1
+            days_ago: 365
+
+        procedures:
+          # EKG
+          - code:
+              system: "http://snomed.info/sct"
+              value: "29303009"
+              display: "Electrocardiogram"
+            qty: 2
+            spread_months: 24
+
+          # Echocardiogram
+          - code:
+              system: "http://snomed.info/sct"
+              value: "40701008"
+              display: "Echocardiography"
+            qty: 1
+            days_ago: 180
+
+output:
+  mode: transaction
+  bundle_size: 100

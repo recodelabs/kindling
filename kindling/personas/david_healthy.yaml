@@ -1,0 +1,207 @@
+version: "0.1"
+name: david_healthy
+description: "28-year-old healthy male athlete"
+
+patient:
+  identifiers:
+    - system: "http://hospital.example/mrn"
+      value: "MRN-DAVID-001"
+  name:
+    family: "Rodriguez"
+    given: ["David", "Carlos"]
+  gender: male
+  birthDate: "1996-02-14"
+  address:
+    line: ["321 Park Place"]
+    city: "Somerville"
+    state: "MA"
+    postalCode: "02144"
+    country: "US"
+  phone: "617-555-3456"
+  email: "david.rodriguez@example.com"
+
+resources:
+  include:
+    - Patient
+    - Practitioner
+    - Organization
+    - Encounter
+    - Observation
+    - Immunization
+    - Coverage
+
+  rules:
+    - name: healthy_adult
+      when:
+        condition: "true"
+      then:
+        add_observations:
+          # Vital signs (excellent)
+          - loinc: "85354-9"
+            display: "Blood pressure panel"
+            components:
+              - loinc: "8480-6"
+                display: "Systolic blood pressure"
+                range:
+                  min: 110
+                  max: 120
+                unit: "mmHg"
+              - loinc: "8462-4"
+                display: "Diastolic blood pressure"
+                range:
+                  min: 65
+                  max: 75
+                unit: "mmHg"
+            times:
+              qty: 2
+              lookback_months: 24
+
+          # Heart rate (athletic)
+          - loinc: "8867-4"
+            display: "Heart rate"
+            range:
+              min: 48
+              max: 60
+            unit: "/min"
+            times:
+              qty: 2
+              lookback_months: 24
+
+          # BMI (athletic build)
+          - loinc: "39156-5"
+            display: "Body mass index (BMI)"
+            range:
+              min: 22
+              max: 24
+            unit: "kg/m2"
+            times:
+              qty: 2
+              lookback_months: 24
+
+          # Basic metabolic panel (normal)
+          - loinc: "2339-0"
+            display: "Glucose"
+            range:
+              min: 75
+              max: 90
+            unit: "mg/dL"
+            times:
+              qty: 2
+              lookback_months: 24
+
+          - loinc: "2160-0"
+            display: "Creatinine"
+            range:
+              min: 0.9
+              max: 1.1
+            unit: "mg/dL"
+            times:
+              qty: 2
+              lookback_months: 24
+
+          # Lipid panel (excellent)
+          - loinc: "2093-3"
+            display: "Total Cholesterol"
+            range:
+              min: 140
+              max: 170
+            unit: "mg/dL"
+            times:
+              qty: 1
+              lookback_months: 24
+
+          - loinc: "2085-9"
+            display: "HDL Cholesterol"
+            range:
+              min: 60
+              max: 70
+            unit: "mg/dL"
+            times:
+              qty: 1
+              lookback_months: 24
+
+          - loinc: "13457-7"
+            display: "LDL Cholesterol"
+            range:
+              min: 70
+              max: 90
+            unit: "mg/dL"
+            times:
+              qty: 1
+              lookback_months: 24
+
+          # Complete blood count (normal)
+          - loinc: "6690-2"
+            display: "WBC count"
+            range:
+              min: 5.0
+              max: 8.0
+            unit: "10*3/uL"
+            times:
+              qty: 2
+              lookback_months: 24
+
+          - loinc: "718-7"
+            display: "Hemoglobin"
+            range:
+              min: 14.5
+              max: 16.0
+            unit: "g/dL"
+            times:
+              qty: 2
+              lookback_months: 24
+
+        encounters:
+          # Annual physical exam
+          - type:
+              system: "http://snomed.info/sct"
+              code: "162673000"
+              display: "General examination"
+            class: "AMB"
+            qty: 2
+            spread_months: 24
+
+          # Sports physical
+          - type:
+              system: "http://snomed.info/sct"
+              code: "270427003"
+              display: "Pre-participation sports physical"
+            class: "AMB"
+            qty: 1
+            days_ago: 180
+
+          # Minor injury (sprained ankle from sports)
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185347001"
+              display: "Encounter for injury"
+            class: "AMB"
+            qty: 1
+            days_ago: 90
+            reason: "Ankle sprain"
+
+        immunizations:
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "140"
+              display: "Influenza, seasonal"
+            qty: 2
+            spread_months: 24
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "208"
+              display: "COVID-19 vaccine"
+            qty: 1
+            days_ago: 180
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "115"
+              display: "Tdap"
+            qty: 1
+            days_ago: 730  # 2 years ago
+
+output:
+  mode: transaction
+  bundle_size: 100

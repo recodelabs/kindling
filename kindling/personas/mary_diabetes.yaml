@@ -1,0 +1,214 @@
+version: "0.1"
+name: mary_diabetes
+description: "55-year-old female with Type 2 Diabetes Mellitus"
+
+patient:
+  identifiers:
+    - system: "http://hospital.example/mrn"
+      value: "MRN-MARY-001"
+  name:
+    family: "Jones"
+    given: ["Mary", "Elizabeth"]
+  gender: female
+  birthDate: "1969-03-15"
+  address:
+    line: ["456 Oak Street", "Apt 2B"]
+    city: "Boston"
+    state: "MA"
+    postalCode: "02134"
+    country: "US"
+  phone: "617-555-1234"
+  email: "mary.jones@example.com"
+
+resources:
+  include:
+    - Patient
+    - Practitioner
+    - Organization
+    - Encounter
+    - Condition
+    - Observation
+    - MedicationRequest
+    - Procedure
+    - Coverage
+
+  rules:
+    - name: diabetes_diagnosis
+      when:
+        condition: "true"
+      then:
+        add_conditions:
+          - code:
+              system: "http://snomed.info/sct"
+              value: "44054006"
+              display: "Type 2 diabetes mellitus"
+            onset:
+              years_ago: 8
+          - code:
+              system: "http://snomed.info/sct"
+              value: "414916001"
+              display: "Obesity"
+            onset:
+              years_ago: 12
+          - code:
+              system: "http://snomed.info/sct"
+              value: "38341003"
+              display: "Hypertension"
+            onset:
+              years_ago: 6
+
+        add_observations:
+          # HbA1c measurements (quarterly)
+          - loinc: "4548-4"
+            display: "Hemoglobin A1c"
+            range:
+              min: 7.2
+              max: 8.5
+            unit: "%"
+            times:
+              qty: 8
+              lookback_months: 24
+
+          # Glucose measurements
+          - loinc: "2339-0"
+            display: "Glucose [Mass/volume] in Blood"
+            range:
+              min: 140
+              max: 180
+            unit: "mg/dL"
+            times:
+              qty: 12
+              lookback_months: 12
+
+          # Blood pressure (elevated)
+          - loinc: "85354-9"
+            display: "Blood pressure panel"
+            components:
+              - loinc: "8480-6"
+                display: "Systolic blood pressure"
+                range:
+                  min: 135
+                  max: 150
+                unit: "mmHg"
+              - loinc: "8462-4"
+                display: "Diastolic blood pressure"
+                range:
+                  min: 85
+                  max: 95
+                unit: "mmHg"
+            times:
+              qty: 6
+              lookback_months: 12
+
+          # BMI (overweight/obese)
+          - loinc: "39156-5"
+            display: "Body mass index (BMI)"
+            range:
+              min: 31
+              max: 33
+            unit: "kg/m2"
+            times:
+              qty: 4
+              lookback_months: 24
+
+          # Cholesterol panel
+          - loinc: "2093-3"
+            display: "Cholesterol [Mass/volume] in Serum or Plasma"
+            range:
+              min: 210
+              max: 240
+            unit: "mg/dL"
+            times:
+              qty: 3
+              lookback_months: 18
+
+          - loinc: "2085-9"
+            display: "HDL Cholesterol"
+            range:
+              min: 35
+              max: 45
+            unit: "mg/dL"
+            times:
+              qty: 3
+              lookback_months: 18
+
+          - loinc: "13457-7"
+            display: "LDL Cholesterol"
+            range:
+              min: 130
+              max: 160
+            unit: "mg/dL"
+            times:
+              qty: 3
+              lookback_months: 18
+
+        meds:
+          - rxnorm: "860975"
+            display: "metformin 1000 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth twice daily with meals"
+            frequency: 2
+            adherence:
+              prob: 0.85
+
+          - rxnorm: "314076"
+            display: "lisinopril 10 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily"
+            frequency: 1
+            adherence:
+              prob: 0.90
+
+          - rxnorm: "617310"
+            display: "atorvastatin 20 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily at bedtime"
+            frequency: 1
+            adherence:
+              prob: 0.88
+
+          - rxnorm: "197361"
+            display: "aspirin 81 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily"
+            frequency: 1
+            adherence:
+              prob: 0.95
+
+        encounters:
+          # Regular diabetes follow-ups
+          - type:
+              system: "http://snomed.info/sct"
+              code: "390906007"
+              display: "Diabetes follow-up"
+            class: "AMB"
+            qty: 8
+            spread_months: 24
+
+          # Annual diabetic eye exam
+          - type:
+              system: "http://snomed.info/sct"
+              code: "410452007"
+              display: "Diabetic retinopathy screening"
+            class: "AMB"
+            qty: 2
+            spread_months: 24
+
+          # Podiatry visits
+          - type:
+              system: "http://snomed.info/sct"
+              code: "409052001"
+              display: "Diabetic foot examination"
+            class: "AMB"
+            qty: 2
+            spread_months: 24
+
+          # Emergency visit for hypoglycemia
+          - type:
+              system: "http://snomed.info/sct"
+              code: "50849002"
+              display: "Emergency room admission"
+            class: "EMER"
+            qty: 1
+            days_ago: 180
+            reason: "Hypoglycemia"
+
+output:
+  mode: transaction
+  bundle_size: 100
