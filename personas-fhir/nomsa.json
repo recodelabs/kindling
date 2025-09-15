@@ -1,11 +1,11 @@
 {
   "resourceType": "Bundle",
-  "id": "11449435-d6a6-46b8-9c5b-98ceab5b6622",
+  "id": "c258407a-826a-4c97-8f5e-bffb90d71cd8",
   "type": "transaction",
-  "timestamp": "2025-09-14T21:46:26+00:00",
+  "timestamp": "2025-09-14T22:12:26+00:00",
   "entry": [
     {
-      "fullUrl": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8",
+      "fullUrl": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b",
       "resource": {
         "resourceType": "Patient",
         "identifier": [
@@ -55,7 +55,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:aa80dd10-2c02-065e-969d-b3b1e201b592",
+      "fullUrl": "urn:uuid:451f0e32-aeca-01d3-79e7-fb2acb4c95d6",
       "resource": {
         "resourceType": "Condition",
         "clinicalStatus": {
@@ -84,7 +84,7 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
         "onsetDateTime": "2019-09-16"
       },
@@ -94,7 +94,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:6c3b3084-4ffc-f8f6-57e8-5d7d7a37fef7",
+      "fullUrl": "urn:uuid:65cf6549-06e9-d895-b5ce-3f192080b886",
       "resource": {
         "resourceType": "Condition",
         "clinicalStatus": {
@@ -123,7 +123,7 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
         "onsetDateTime": "2024-09-14"
       },
@@ -133,7 +133,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:290728dd-645d-5ceb-26df-ff999bbecbaa",
+      "fullUrl": "urn:uuid:af86031e-1612-87f1-199e-c876b4840561",
       "resource": {
         "resourceType": "Condition",
         "clinicalStatus": {
@@ -162,7 +162,7 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
         "onsetDateTime": "2015-09-17"
       },
@@ -172,7 +172,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:cc21727d-e313-c1b4-942a-2432a97da587",
+      "fullUrl": "urn:uuid:82477369-8e0f-b1d4-4251-6dbd0751ac4b",
       "resource": {
         "resourceType": "Condition",
         "clinicalStatus": {
@@ -201,7 +201,7 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
         "onsetDateTime": "2017-09-16"
       },
@@ -211,7 +211,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:6eaacbcb-01ba-09f7-91ca-a9c5c469d490",
+      "fullUrl": "urn:uuid:4cebe76a-9717-dde1-8d87-5869b4933a27",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -225,11 +225,11 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
-        "effectiveDateTime": "2025-08-28T21:46:26+00:00",
+        "effectiveDateTime": "2025-08-23T22:12:26+00:00",
         "valueQuantity": {
-          "value": 8.38,
+          "value": 8.19,
           "unit": "%",
           "system": "http://unitsofmeasure.org",
           "code": "%"
@@ -241,7 +241,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:b3e44e52-b7c4-e176-0dc0-9c25d8a5086e",
+      "fullUrl": "urn:uuid:3212b6d8-8037-457f-0b90-675e76b6c136",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -255,11 +255,11 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
-        "effectiveDateTime": "2025-09-03T21:46:26+00:00",
+        "effectiveDateTime": "2025-09-12T22:12:26+00:00",
         "valueQuantity": {
-          "value": 185.91,
+          "value": 145.52,
           "unit": "mg/dL",
           "system": "http://unitsofmeasure.org",
           "code": "mg/dL"
@@ -271,7 +271,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:ec662aae-ffdf-9e44-589f-932abac02e0e",
+      "fullUrl": "urn:uuid:c36d00f3-09c1-8062-6db0-7a55e81b5950",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -285,11 +285,11 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
-        "effectiveDateTime": "2025-08-31T21:46:26+00:00",
+        "effectiveDateTime": "2025-08-24T22:12:26+00:00",
         "valueQuantity": {
-          "value": 56.29,
+          "value": 30.97,
           "unit": "1",
           "system": "http://unitsofmeasure.org",
           "code": "1"
@@ -301,7 +301,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:2740b350-4ed9-e66a-ab66-8543956d530a",
+      "fullUrl": "urn:uuid:3ff5a924-0e60-d2d0-692a-7127ec0df937",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -315,11 +315,11 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
-        "effectiveDateTime": "2025-08-21T21:46:26+00:00",
+        "effectiveDateTime": "2025-08-26T22:12:26+00:00",
         "valueQuantity": {
-          "value": 27.17,
+          "value": 26.0,
           "unit": "kg/m2",
           "system": "http://unitsofmeasure.org",
           "code": "kg/m2"
@@ -331,7 +331,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:e9431e7b-a598-c323-8f2d-9833ec8cbee2",
+      "fullUrl": "urn:uuid:b4e21066-68fd-db1e-8813-b71006ca8380",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -345,11 +345,11 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
-        "effectiveDateTime": "2025-09-03T21:46:26+00:00",
+        "effectiveDateTime": "2025-09-06T22:12:26+00:00",
         "valueQuantity": {
-          "value": 50.64,
+          "value": 80.0,
           "unit": "1",
           "system": "http://unitsofmeasure.org",
           "code": "1"
@@ -361,7 +361,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:fde5bd59-cab7-276d-b0d8-8e8052708aa7",
+      "fullUrl": "urn:uuid:f624f38e-192f-b20c-199a-2e4a51a84d3b",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -375,11 +375,11 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
-        "effectiveDateTime": "2025-08-25T21:46:26+00:00",
+        "effectiveDateTime": "2025-09-04T22:12:26+00:00",
         "valueQuantity": {
-          "value": 1.09,
+          "value": 1.17,
           "unit": "mg/dL",
           "system": "http://unitsofmeasure.org",
           "code": "mg/dL"
@@ -391,7 +391,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:2ce25c1b-7edd-094a-3a4d-38cfbffd18f1",
+      "fullUrl": "urn:uuid:9d240833-e982-ae3d-fc37-98b76b7a8e30",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -405,11 +405,11 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
-        "effectiveDateTime": "2025-08-24T21:46:26+00:00",
+        "effectiveDateTime": "2025-08-20T22:12:26+00:00",
         "valueQuantity": {
-          "value": 200.37,
+          "value": 203.77,
           "unit": "mg/dL",
           "system": "http://unitsofmeasure.org",
           "code": "mg/dL"
@@ -421,7 +421,7 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:6e8449eb-17d0-a1e5-92ae-3f1d6d9c04c4",
+      "fullUrl": "urn:uuid:703c7215-bab0-b193-099e-4aed6b6d75da",
       "resource": {
         "resourceType": "Observation",
         "status": "final",
@@ -435,11 +435,11 @@
           ]
         },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
-        "effectiveDateTime": "2025-08-19T21:46:26+00:00",
+        "effectiveDateTime": "2025-08-26T22:12:26+00:00",
         "valueQuantity": {
-          "value": 71.19,
+          "value": 70.93,
           "unit": "kg",
           "system": "http://unitsofmeasure.org",
           "code": "kg"
@@ -451,26 +451,15 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:90e1ab8a-77e4-e3c7-edd0-00b49b1883da",
+      "fullUrl": "urn:uuid:37105613-fd98-b562-caae-a4b3f96537bb",
       "resource": {
         "resourceType": "MedicationRequest",
         "status": "active",
         "intent": "order",
-        "medication": {
-          "concept": {
-            "coding": [
-              {
-                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-                "code": "860974",
-                "display": "metformin 500 MG Oral Tablet"
-              }
-            ]
-          }
-        },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
-        "authoredOn": "2025-09-14T21:46:26+00:00",
+        "authoredOn": "2025-09-14T22:12:26+00:00",
         "dosageInstruction": [
           {
             "text": "Take 1 tablet by mouth twice daily with meals",
@@ -482,7 +471,16 @@
               }
             }
           }
-        ]
+        ],
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "860974",
+              "display": "metformin 500 MG Oral Tablet"
+            }
+          ]
+        }
       },
       "request": {
         "method": "POST",
@@ -490,26 +488,15 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:2532b644-be89-a0d5-a072-9f9d0292c049",
+      "fullUrl": "urn:uuid:926c61bf-3302-a62f-28b7-8ae3417e19a7",
       "resource": {
         "resourceType": "MedicationRequest",
         "status": "active",
         "intent": "order",
-        "medication": {
-          "concept": {
-            "coding": [
-              {
-                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-                "code": "310490",
-                "display": "glibenclamide 5 MG Oral Tablet"
-              }
-            ]
-          }
-        },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
-        "authoredOn": "2025-09-14T21:46:26+00:00",
+        "authoredOn": "2025-09-14T22:12:26+00:00",
         "dosageInstruction": [
           {
             "text": "Take 1 tablet by mouth once daily before breakfast",
@@ -521,7 +508,16 @@
               }
             }
           }
-        ]
+        ],
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "310490",
+              "display": "glibenclamide 5 MG Oral Tablet"
+            }
+          ]
+        }
       },
       "request": {
         "method": "POST",
@@ -529,26 +525,15 @@
       }
     },
     {
-      "fullUrl": "urn:uuid:6cba53ab-2ee4-76e7-b704-2ce89fe5a63e",
+      "fullUrl": "urn:uuid:2ff9eb69-583d-93c4-b3cd-a9a910046d1a",
       "resource": {
         "resourceType": "MedicationRequest",
         "status": "active",
         "intent": "order",
-        "medication": {
-          "concept": {
-            "coding": [
-              {
-                "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
-                "code": "2176766",
-                "display": "artemether 20 MG / lumefantrine 120 MG Oral Tablet"
-              }
-            ]
-          }
-        },
         "subject": {
-          "reference": "urn:uuid:b21cf601-e185-23ab-4fa4-f2f8849ca9c8"
+          "reference": "urn:uuid:f0c886ff-ce0d-0073-b05d-f6b30203340b"
         },
-        "authoredOn": "2025-09-14T21:46:26+00:00",
+        "authoredOn": "2025-09-14T22:12:26+00:00",
         "dosageInstruction": [
           {
             "text": "Take 4 tablets twice daily for 3 days",
@@ -560,7 +545,16 @@
               }
             }
           }
-        ]
+        ],
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "2176766",
+              "display": "artemether 20 MG / lumefantrine 120 MG Oral Tablet"
+            }
+          ]
+        }
       },
       "request": {
         "method": "POST",

@@ -11,6 +11,7 @@ import click
 from .generator import Generator
 from .persona_loader import PersonaLoader
 from .validator import FHIRValidator
+from .utils.r4_converter import convert_bundle_to_r4
 
 
 def datetime_json_encoder(obj: Any) -> str:
@@ -199,7 +200,8 @@ def main(
                 if output_path.suffix == ".json":
                     # Single file with array
                     with open(output_path, 'w') as f:
-                        json.dump([b.model_dump() for b in result], f, indent=2, default=datetime_json_encoder)
+                        bundles_data = [convert_bundle_to_r4(b.model_dump()) for b in result]
+                        json.dump(bundles_data, f, indent=2, default=datetime_json_encoder)
                     click.echo(f"Wrote {len(result)} bundles to {output_path}", err=True)
                 else:
                     # Directory with multiple files
@@ -207,20 +209,24 @@ def main(
                     for i, bundle in enumerate(result):
                         bundle_file = output_path / f"bundle_{i:04d}.json"
                         with open(bundle_file, 'w') as f:
-                            json.dump(bundle.model_dump(), f, indent=2, default=datetime_json_encoder)
+                            bundle_data = convert_bundle_to_r4(bundle.model_dump())
+                            json.dump(bundle_data, f, indent=2, default=datetime_json_encoder)
                     click.echo(f"Wrote {len(result)} bundles to {output_path}/", err=True)
             else:
                 # Output to stdout
                 for bundle in result:
-                    click.echo(bundle.model_dump_json(indent=2))
+                    bundle_data = convert_bundle_to_r4(bundle.model_dump())
+                    click.echo(json.dumps(bundle_data, indent=2, default=datetime_json_encoder))
         else:
             # Single bundle
             if output:
                 with open(output, 'w') as f:
-                    json.dump(result.model_dump(), f, indent=2, default=datetime_json_encoder)
+                    bundle_data = convert_bundle_to_r4(result.model_dump())
+                    json.dump(bundle_data, f, indent=2, default=datetime_json_encoder)
                 click.echo(f"Wrote bundle to {output}", err=True)
             else:
-                click.echo(result.model_dump_json(indent=2))
+                bundle_data = convert_bundle_to_r4(result.model_dump())
+                click.echo(json.dumps(bundle_data, indent=2, default=datetime_json_encoder))
 
         click.echo("Generation complete!", err=True)
 

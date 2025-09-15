@@ -25,7 +25,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "fhir.resources>=7.1.0",
+    "fhir.resources>=7.1.0",  # Using 7.1.0 with R4 conversion
     "pyyaml>=6.0",
     "click>=8.0",
     "pydantic>=2.0",
