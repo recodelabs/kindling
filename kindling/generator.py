@@ -349,6 +349,14 @@ class Generator:
             resources.extend(related_resources)
             urn_mapping.update(related_urn_mapping)
 
+        # Add diagnostic reports
+        for report_def in then.get("diagnostic_reports", []):
+            report_resources, report_urn_mapping = self._create_diagnostic_report_with_observations(
+                patient, patient_ref, report_def, request_method
+            )
+            resources.extend(report_resources)
+            urn_mapping.update(report_urn_mapping)
+
         return resources, urn_mapping
 
     def _persona_to_profile(self, persona_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -498,6 +506,64 @@ class Generator:
             related_person_id=related_person2_id
         )
         resources.append(related_person2)
+
+        return resources, urn_mapping
+
+    def _create_diagnostic_report_with_observations(
+        self,
+        patient: Patient,
+        patient_ref: str,
+        report_def: Dict[str, Any],
+        request_method: str = "POST"
+    ) -> Tuple[List[Any], Dict[str, str]]:
+        """Create a DiagnosticReport with associated Observations.
+
+        Args:
+            patient: Patient resource
+            patient_ref: Reference to use for patient (URN UUID or regular ID)
+            report_def: DiagnosticReport definition
+            request_method: HTTP method for transaction bundles
+
+        Returns:
+            Tuple of (resources, urn_mapping)
+        """
+        resources = []
+        urn_mapping = {}
+        observation_refs = []
+
+        # Create observations for the report if defined
+        for obs_def in report_def.get("observations", []):
+            obs_id = self.rng.uuid()
+            if request_method == "POST":
+                obs_urn = self.rng.uuid()
+                urn_mapping[obs_id] = obs_urn
+                obs_ref = f"urn:uuid:{obs_urn}"
+            else:
+                obs_ref = f"Observation/{obs_id}"
+
+            observation = self.resource_factory.create_observation(
+                patient_id=patient.id,
+                patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
+                observation_def=obs_def,
+                observation_id=obs_id
+            )
+            resources.append(observation)
+            observation_refs.append(obs_ref)
+
+        # Create the diagnostic report
+        report_id = self.rng.uuid()
+        if request_method == "POST":
+            report_urn = self.rng.uuid()
+            urn_mapping[report_id] = report_urn
+
+        diagnostic_report = self.resource_factory.create_diagnostic_report(
+            patient_id=patient.id,
+            patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
+            diagnostic_report_def=report_def,
+            observation_refs=observation_refs,
+            report_id=report_id
+        )
+        resources.append(diagnostic_report)
 
         return resources, urn_mapping
 

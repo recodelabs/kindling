@@ -31,6 +31,7 @@ resources:
     - MedicationRequest
     - Procedure
     - Coverage
+    - DiagnosticReport
 
   rules:
     - name: diabetes_diagnosis
@@ -208,6 +209,147 @@ resources:
             qty: 1
             days_ago: 180
             reason: "Hypoglycemia"
+
+        diagnostic_reports:
+          # Comprehensive Metabolic Panel (CMP)
+          - code:
+              system: "http://loinc.org"
+              value: "24323-8"
+              display: "Comprehensive metabolic panel"
+            status: "final"
+            days_ago: 30
+            conclusion: "Glucose elevated at 165 mg/dL. Kidney function within normal limits. Electrolytes balanced."
+            observations:
+              - loinc: "2345-7"
+                display: "Glucose [Mass/volume] in Serum or Plasma"
+                range:
+                  min: 165
+                  max: 165
+                unit: "mg/dL"
+              - loinc: "2160-0"
+                display: "Creatinine [Mass/volume] in Serum or Plasma"
+                range:
+                  min: 1.0
+                  max: 1.0
+                unit: "mg/dL"
+              - loinc: "3094-0"
+                display: "Urea nitrogen [Mass/volume] in Serum or Plasma"
+                range:
+                  min: 18
+                  max: 18
+                unit: "mg/dL"
+              - loinc: "2951-2"
+                display: "Sodium [Moles/volume] in Serum or Plasma"
+                range:
+                  min: 140
+                  max: 140
+                unit: "mmol/L"
+              - loinc: "2823-3"
+                display: "Potassium [Moles/volume] in Serum or Plasma"
+                range:
+                  min: 4.2
+                  max: 4.2
+                unit: "mmol/L"
+
+          # Lipid Panel
+          - code:
+              system: "http://loinc.org"
+              value: "24331-1"
+              display: "Lipid panel with direct LDL"
+            status: "final"
+            days_ago: 90
+            conclusion: "Dyslipidemia present. Total cholesterol 225 mg/dL, LDL elevated at 145 mg/dL, HDL low at 38 mg/dL."
+            observations:
+              - loinc: "2093-3"
+                display: "Cholesterol [Mass/volume] in Serum or Plasma"
+                range:
+                  min: 225
+                  max: 225
+                unit: "mg/dL"
+              - loinc: "2085-9"
+                display: "HDL Cholesterol [Mass/volume] in Serum or Plasma"
+                range:
+                  min: 38
+                  max: 38
+                unit: "mg/dL"
+              - loinc: "13457-7"
+                display: "LDL Cholesterol [Mass/volume] in Serum or Plasma"
+                range:
+                  min: 145
+                  max: 145
+                unit: "mg/dL"
+              - loinc: "2571-8"
+                display: "Triglycerides [Mass/volume] in Serum or Plasma"
+                range:
+                  min: 210
+                  max: 210
+                unit: "mg/dL"
+
+          # HbA1c Lab Report
+          - code:
+              system: "http://loinc.org"
+              value: "4548-4"
+              display: "Hemoglobin A1c lab report"
+            status: "final"
+            days_ago: 7
+            conclusion: "HbA1c of 7.8% indicates suboptimal diabetes control. Recommend medication adjustment."
+            observations:
+              - loinc: "4548-4"
+                display: "Hemoglobin A1c/Hemoglobin.total in Blood"
+                range:
+                  min: 7.8
+                  max: 7.8
+                unit: "%"
+
+          # Urinalysis for Diabetic Monitoring
+          - code:
+              system: "http://loinc.org"
+              value: "24356-8"
+              display: "Urinalysis complete"
+            status: "final"
+            days_ago: 30
+            conclusion: "Trace protein detected. No glucose in urine. Specific gravity normal."
+            observations:
+              - loinc: "5804-0"
+                display: "Protein [Mass/volume] in Urine by Test strip"
+                range:
+                  min: 15
+                  max: 15
+                unit: "mg/dL"
+              - loinc: "2349-9"
+                display: "Glucose [Mass/volume] in Urine by Test strip"
+                range:
+                  min: 0
+                  max: 0
+                unit: "mg/dL"
+              - loinc: "2965-2"
+                display: "Specific gravity of Urine by Test strip"
+                range:
+                  min: 1.015
+                  max: 1.015
+                unit: "1"
+
+          # Kidney Function Panel
+          - code:
+              system: "http://loinc.org"
+              value: "24362-6"
+              display: "Renal function panel"
+            status: "final"
+            days_ago: 60
+            conclusion: "Early signs of diabetic nephropathy. Microalbumin slightly elevated. eGFR normal."
+            observations:
+              - loinc: "14959-1"
+                display: "Microalbumin [Mass/volume] in Urine"
+                range:
+                  min: 35
+                  max: 35
+                unit: "mg/L"
+              - loinc: "33914-3"
+                display: "Glomerular filtration rate"
+                range:
+                  min: 85
+                  max: 85
+                unit: "mL/min/1.73m2"
 
 output:
   mode: transaction

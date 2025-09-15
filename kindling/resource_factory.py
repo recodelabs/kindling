@@ -20,6 +20,7 @@ from fhir.resources.period import Period
 from fhir.resources.quantity import Quantity
 from fhir.resources.reference import Reference
 from fhir.resources.relatedperson import RelatedPerson
+from fhir.resources.diagnosticreport import DiagnosticReport
 
 from .config import SYSTEMS, DEFAULT_ADDRESS, DEFAULT_TELECOM, RESOURCE_DEFAULTS
 from .utils.random_utils import SeededRandom
@@ -500,3 +501,99 @@ class ResourceFactory:
         related_person = RelatedPerson(**kwargs)
 
         return related_person
+
+    def create_diagnostic_report(
+        self,
+        patient_id: str,
+        diagnostic_report_def: Dict[str, Any],
+        observation_refs: Optional[List[str]] = None,
+        patient_ref: Optional[str] = None,
+        report_id: Optional[str] = None
+    ) -> DiagnosticReport:
+        """Create a DiagnosticReport resource.
+
+        Args:
+            patient_id: Patient ID reference
+            diagnostic_report_def: DiagnosticReport definition
+            observation_refs: List of Observation references to include in the report
+            patient_ref: Optional custom patient reference (defaults to Patient/{patient_id})
+            report_id: Optional DiagnosticReport ID
+
+        Returns:
+            DiagnosticReport resource
+        """
+        report_id = report_id or self.rng.uuid()
+
+        # Extract code (usually LOINC for lab panels)
+        code_data = diagnostic_report_def.get("code", {})
+        coding = Coding(
+            system=code_data.get("system", SYSTEMS["LOINC"]),
+            code=code_data.get("value"),
+            display=code_data.get("display")
+        )
+
+        # Determine status
+        status = diagnostic_report_def.get("status", "final")
+
+        # Category (e.g., LAB, RAD, etc.)
+        category_data = diagnostic_report_def.get("category", {})
+        if category_data:
+            category_coding = Coding(
+                system=category_data.get("system", "http://terminology.hl7.org/CodeSystem/v2-0074"),
+                code=category_data.get("code", "LAB"),
+                display=category_data.get("display", "Laboratory")
+            )
+            category = [CodeableConcept(coding=[category_coding])]
+        else:
+            # Default to LAB category
+            category = [CodeableConcept(
+                coding=[Coding(
+                    system="http://terminology.hl7.org/CodeSystem/v2-0074",
+                    code="LAB",
+                    display="Laboratory"
+                )]
+            )]
+
+        # Generate issued date
+        days_ago = diagnostic_report_def.get("days_ago", self.rng.randint(1, 30))
+        issued_date = datetime.now() - timedelta(days=days_ago)
+
+        # Build result references if provided
+        result_refs = []
+        if observation_refs:
+            for obs_ref in observation_refs:
+                result_refs.append(Reference(reference=obs_ref))
+
+        # Create conclusion text if provided
+        conclusion = diagnostic_report_def.get("conclusion")
+
+        # Build the DiagnosticReport
+        kwargs = {
+            "id": report_id,
+            "status": status,
+            "category": category,
+            "code": CodeableConcept(coding=[coding]),
+            "subject": Reference(reference=patient_ref or f"Patient/{patient_id}"),
+            "issued": issued_date.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+        }
+
+        # Add optional fields
+        if result_refs:
+            kwargs["result"] = result_refs
+        if conclusion:
+            kwargs["conclusion"] = conclusion
+
+        # Add effective date if specified
+        if effective_date := diagnostic_report_def.get("effectiveDateTime"):
+            kwargs["effectiveDateTime"] = effective_date
+        else:
+            # Default to same as issued date
+            kwargs["effectiveDateTime"] = issued_date.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+
+        # Add performer if specified
+        if performer := diagnostic_report_def.get("performer"):
+            kwargs["performer"] = [Reference(reference=performer)]
+
+        diagnostic_report = DiagnosticReport(**kwargs)
+
+        return diagnostic_report
