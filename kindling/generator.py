@@ -357,6 +357,75 @@ class Generator:
             resources.extend(report_resources)
             urn_mapping.update(report_urn_mapping)
 
+        # Add immunizations
+        for immunization_def in then.get("immunizations", []):
+            # Support multiple doses of same vaccine
+            qty = immunization_def.get("qty", 1)
+            for i in range(qty):
+                imm_id = self.rng.uuid()
+                if request_method == "POST":
+                    imm_urn = self.rng.uuid()
+                    urn_mapping[imm_id] = imm_urn
+
+                # Adjust days_ago for multiple doses
+                if qty > 1 and "days_ago" in immunization_def:
+                    # Space out multiple doses
+                    adjusted_def = immunization_def.copy()
+                    adjusted_def["days_ago"] = immunization_def["days_ago"] - (i * 30)
+                    adjusted_def["doseNumber"] = i + 1
+                else:
+                    adjusted_def = immunization_def
+
+                immunization = self.resource_factory.create_immunization(
+                    patient_id=patient.id,
+                    patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
+                    immunization_def=adjusted_def,
+                    immunization_id=imm_id
+                )
+                resources.append(immunization)
+
+        # Add coverage
+        for coverage_def in then.get("coverage", []):
+            coverage_id = self.rng.uuid()
+            if request_method == "POST":
+                coverage_urn = self.rng.uuid()
+                urn_mapping[coverage_id] = coverage_urn
+
+            coverage = self.resource_factory.create_coverage(
+                patient_id=patient.id,
+                patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
+                coverage_def=coverage_def,
+                coverage_id=coverage_id
+            )
+            resources.append(coverage)
+
+        # Add encounters
+        for encounter_def in then.get("encounters", []):
+            # Support multiple encounters of same type
+            qty = encounter_def.get("qty", 1)
+            spread_months = encounter_def.get("spread_months", 12)
+
+            for i in range(qty):
+                encounter_id = self.rng.uuid()
+                if request_method == "POST":
+                    encounter_urn = self.rng.uuid()
+                    urn_mapping[encounter_id] = encounter_urn
+
+                # Adjust days_ago for multiple encounters (spread them out)
+                adjusted_def = encounter_def.copy()
+                if qty > 1 and spread_months > 0:
+                    # Spread encounters evenly over the period
+                    days_between = (spread_months * 30) // qty
+                    adjusted_def["days_ago"] = encounter_def.get("days_ago", 0) + (i * days_between)
+
+                encounter = self.resource_factory.create_encounter(
+                    patient_id=patient.id,
+                    patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
+                    encounter_def=adjusted_def,
+                    encounter_id=encounter_id
+                )
+                resources.append(encounter)
+
         return resources, urn_mapping
 
     def _persona_to_profile(self, persona_data: Dict[str, Any]) -> Dict[str, Any]:

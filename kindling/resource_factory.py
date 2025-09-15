@@ -21,6 +21,8 @@ from fhir.resources.quantity import Quantity
 from fhir.resources.reference import Reference
 from fhir.resources.relatedperson import RelatedPerson
 from fhir.resources.diagnosticreport import DiagnosticReport
+from fhir.resources.immunization import Immunization
+from fhir.resources.coverage import Coverage
 
 from .config import SYSTEMS, DEFAULT_ADDRESS, DEFAULT_TELECOM, RESOURCE_DEFAULTS
 from .utils.random_utils import SeededRandom
@@ -341,11 +343,13 @@ class ResourceFactory:
         """
         encounter_id = encounter_id or self.rng.uuid()
 
-        # Encounter class
-        encounter_class = Coding(
-            system="http://terminology.hl7.org/CodeSystem/v3-ActCode",
-            code=encounter_def.get("class", "AMB"),
-            display=encounter_def.get("class_display", "ambulatory")
+        # Encounter class - needs to be a CodeableConcept
+        encounter_class = CodeableConcept(
+            coding=[Coding(
+                system="http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                code=encounter_def.get("class", "AMB"),
+                display=encounter_def.get("class_display", "ambulatory")
+            )]
         )
 
         # Encounter type
@@ -382,15 +386,47 @@ class ResourceFactory:
             end=end_time.strftime("%Y-%m-%dT%H:%M:%S+00:00")
         )
 
+        # Build encounter kwargs
+        kwargs = {
+            "id": encounter_id,
+            "status": encounter_def.get("status", RESOURCE_DEFAULTS["ENCOUNTER_STATUS"]),
+            "class_fhir": [encounter_class],  # class_fhir is a list
+            "type": [encounter_type],
+            "subject": Reference(reference=patient_ref or f"Patient/{patient_id}"),
+            "actualPeriod": period  # Changed from 'period' to 'actualPeriod'
+        }
+
+        # Add optional reason codes
+        if reason := encounter_def.get("reason"):
+            if isinstance(reason, str):
+                reason_concept = CodeableConcept(
+                    text=reason
+                )
+            else:
+                reason_concept = CodeableConcept(
+                    coding=[Coding(
+                        system=reason.get("system", "http://snomed.info/sct"),
+                        code=reason.get("code"),
+                        display=reason.get("display")
+                    )]
+                )
+            from fhir.resources.encounter import EncounterReason
+            kwargs["reason"] = [EncounterReason(use=[reason_concept])]
+
+        # Add performer/participant if specified
+        if performer := encounter_def.get("performer"):
+            from fhir.resources.encounter import EncounterParticipant
+            participant = EncounterParticipant(
+                actor=Reference(reference=performer)
+            )
+            kwargs["participant"] = [participant]
+
+        # Add service provider (organization)
+        if service_provider := encounter_def.get("serviceProvider"):
+            kwargs["serviceProvider"] = Reference(reference=service_provider)
+
         # Create encounter
-        encounter = Encounter(
-            id=encounter_id,
-            status=RESOURCE_DEFAULTS["ENCOUNTER_STATUS"],
-            class_fhir=encounter_class,
-            type=[encounter_type],
-            subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
-            period=period
-        )
+        encounter = Encounter(**kwargs)
 
         return encounter
 
@@ -597,3 +633,196 @@ class ResourceFactory:
         diagnostic_report = DiagnosticReport(**kwargs)
 
         return diagnostic_report
+
+    def create_immunization(
+        self,
+        patient_id: str,
+        immunization_def: Dict[str, Any],
+        patient_ref: Optional[str] = None,
+        immunization_id: Optional[str] = None
+    ) -> Immunization:
+        """Create an Immunization resource.
+
+        Args:
+            patient_id: Patient ID reference
+            immunization_def: Immunization definition
+            patient_ref: Optional custom patient reference (defaults to Patient/{patient_id})
+            immunization_id: Optional Immunization ID
+
+        Returns:
+            Immunization resource
+        """
+        immunization_id = immunization_id or self.rng.uuid()
+
+        # Extract vaccine code (CVX or other coding system)
+        vaccine_data = immunization_def.get("vaccine", {})
+        vaccine_coding = Coding(
+            system=vaccine_data.get("system", "http://hl7.org/fhir/sid/cvx"),
+            code=vaccine_data.get("code"),
+            display=vaccine_data.get("display")
+        )
+
+        # Status - default to completed
+        status = immunization_def.get("status", "completed")
+
+        # Occurrence date
+        days_ago = immunization_def.get("days_ago", self.rng.randint(30, 365))
+        occurrence_date = datetime.now() - timedelta(days=days_ago)
+
+        # Build the Immunization resource
+        kwargs = {
+            "id": immunization_id,
+            "status": status,
+            "vaccineCode": CodeableConcept(coding=[vaccine_coding]),
+            "patient": Reference(reference=patient_ref or f"Patient/{patient_id}"),
+            "occurrenceDateTime": occurrence_date.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+        }
+
+        # Add optional fields
+        if dose_number := immunization_def.get("doseNumber"):
+            kwargs["doseQuantity"] = Quantity(value=dose_number)
+
+        if lot_number := immunization_def.get("lotNumber"):
+            kwargs["lotNumber"] = lot_number
+
+        if site := immunization_def.get("site"):
+            site_coding = Coding(
+                system="http://terminology.hl7.org/CodeSystem/v3-ActSite",
+                code=site.get("code") if isinstance(site, dict) else site,
+                display=site.get("display") if isinstance(site, dict) else None
+            )
+            kwargs["site"] = CodeableConcept(coding=[site_coding])
+
+        if route := immunization_def.get("route"):
+            route_coding = Coding(
+                system="http://terminology.hl7.org/CodeSystem/v3-RouteOfAdministration",
+                code=route.get("code") if isinstance(route, dict) else route,
+                display=route.get("display") if isinstance(route, dict) else None
+            )
+            kwargs["route"] = CodeableConcept(coding=[route_coding])
+
+        if performer := immunization_def.get("performer"):
+            from fhir.resources.immunization import ImmunizationPerformer
+            kwargs["performer"] = [ImmunizationPerformer(actor=Reference(reference=performer))]
+
+        if not_given := immunization_def.get("notGiven"):
+            kwargs["primarySource"] = not not_given  # If not given, primarySource is False
+
+        immunization = Immunization(**kwargs)
+
+        return immunization
+
+    def create_coverage(
+        self,
+        patient_id: str,
+        coverage_def: Dict[str, Any],
+        patient_ref: Optional[str] = None,
+        coverage_id: Optional[str] = None
+    ) -> Coverage:
+        """Create a Coverage resource.
+
+        Args:
+            patient_id: Patient ID reference
+            coverage_def: Coverage definition
+            patient_ref: Optional custom patient reference (defaults to Patient/{patient_id})
+            coverage_id: Optional Coverage ID
+
+        Returns:
+            Coverage resource
+        """
+        coverage_id = coverage_id or self.rng.uuid()
+
+        # Status - default to active
+        status = coverage_def.get("status", "active")
+
+        # Type of coverage
+        type_data = coverage_def.get("type", {})
+        if type_data:
+            type_coding = Coding(
+                system=type_data.get("system", "http://terminology.hl7.org/CodeSystem/v3-ActCode"),
+                code=type_data.get("code", "EHCPOL"),
+                display=type_data.get("display", "Extended healthcare")
+            )
+            coverage_type = CodeableConcept(coding=[type_coding])
+        else:
+            # Default to general health insurance
+            coverage_type = CodeableConcept(
+                coding=[Coding(
+                    system="http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                    code="EHCPOL",
+                    display="Extended healthcare"
+                )]
+            )
+
+        # Build the Coverage resource
+        kwargs = {
+            "id": coverage_id,
+            "status": status,
+            "beneficiary": Reference(reference=patient_ref or f"Patient/{patient_id}"),
+            "kind": coverage_def.get("kind", "insurance")  # Required field
+        }
+
+        # Add type if provided (optional in some FHIR versions)
+        if type_data:
+            kwargs["type"] = coverage_type
+
+        # Add subscriber if provided
+        if subscriber := coverage_def.get("subscriber"):
+            kwargs["subscriber"] = Reference(reference=subscriber)
+        else:
+            # Default to beneficiary as subscriber
+            kwargs["subscriber"] = Reference(reference=patient_ref or f"Patient/{patient_id}")
+
+        # Add paymentBy (insurance company) - Note: FHIR R5 uses paymentBy instead of payor
+        from fhir.resources.coverage import CoveragePaymentBy
+
+        if payor := coverage_def.get("payor"):
+            if isinstance(payor, str):
+                kwargs["paymentBy"] = [CoveragePaymentBy(party=Reference(reference=payor))]
+            elif isinstance(payor, list):
+                kwargs["paymentBy"] = [CoveragePaymentBy(party=Reference(reference=p)) for p in payor]
+            else:
+                kwargs["paymentBy"] = [CoveragePaymentBy(party=Reference(reference=payor.get("reference")))]
+        else:
+            # Default payor
+            kwargs["paymentBy"] = [CoveragePaymentBy(party=Reference(reference="Organization/default-insurance"))]
+
+        # Add period if specified
+        if period := coverage_def.get("period"):
+            start_date = None
+            end_date = None
+
+            if start_days_ago := period.get("start_days_ago"):
+                start_date = (datetime.now() - timedelta(days=start_days_ago)).strftime("%Y-%m-%d")
+            elif start := period.get("start"):
+                start_date = start
+
+            if end_days_ago := period.get("end_days_ago"):
+                end_date = (datetime.now() - timedelta(days=end_days_ago)).strftime("%Y-%m-%d")
+            elif end := period.get("end"):
+                end_date = end
+
+            if start_date or end_date:
+                kwargs["period"] = Period(start=start_date, end=end_date)
+
+        # Add identifier if provided
+        if identifier := coverage_def.get("identifier"):
+            kwargs["identifier"] = [
+                Identifier(
+                    system=identifier.get("system", "http://example.org/insurance-id"),
+                    value=identifier.get("value")
+                )
+            ]
+
+        # Add relationship if provided
+        if relationship := coverage_def.get("relationship"):
+            rel_coding = Coding(
+                system="http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+                code=relationship if isinstance(relationship, str) else relationship.get("code"),
+                display=relationship.get("display") if isinstance(relationship, dict) else None
+            )
+            kwargs["relationship"] = CodeableConcept(coding=[rel_coding])
+
+        coverage = Coverage(**kwargs)
+
+        return coverage

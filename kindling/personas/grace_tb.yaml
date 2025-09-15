@@ -1,0 +1,366 @@
+version: "0.1"
+name: grace_tb
+description: "29-year-old female with Pulmonary Tuberculosis under treatment"
+
+patient:
+  identifiers:
+    - system: "http://hospital.example/mrn"
+      value: "MRN-GRACE-001"
+  name:
+    family: "Wanjiku"
+    given: ["Grace"]
+  gender: female
+  birthDate: "1995-08-08"
+  address:
+    line: ["123 Uhuru Highway"]
+    city: "Nairobi"
+    state: "Nairobi County"
+    postalCode: "00100"
+    country: "KE"
+  phone: "+254-720-555-1234"
+  email: "grace.wanjiku@example.com"
+
+resources:
+  include:
+    - Patient
+    - Practitioner
+    - Organization
+    - Encounter
+    - Condition
+    - Observation
+    - MedicationRequest
+    - Immunization
+    - Coverage
+    - DiagnosticReport
+
+  rules:
+    - name: tb_diagnosis_and_treatment
+      when:
+        condition: "true"
+      then:
+        add_conditions:
+          - code:
+              system: "http://snomed.info/sct"
+              value: "154283005"
+              display: "Pulmonary tuberculosis"
+            onset:
+              days_ago: 309  # Initial diagnosis ~2024-11-10
+
+          - code:
+              system: "http://snomed.info/sct"
+              value: "161663000"
+              display: "Family history of tuberculosis"
+            onset:
+              years_ago: 7  # Uncle had TB in 2018
+
+        add_observations:
+          # Sputum smear/culture results
+          - loinc: "618-9"
+            display: "Mycobacterium sp identified in Sputum by Organism specific culture"
+            value_type: "boolean"
+            positive: true
+            times:
+              qty: 1
+              days_ago: 309  # Initial positive diagnosis
+
+          - loinc: "618-9"
+            display: "Mycobacterium sp identified in Sputum by Organism specific culture"
+            value_type: "boolean"
+            positive: false
+            times:
+              qty: 1
+              days_ago: 212  # Month 4 negative (~2025-02-15)
+
+          # End-of-treatment confirmation (added)
+          - loinc: "618-9"
+            display: "Mycobacterium sp identified in Sputum by Organism specific culture"
+            value_type: "boolean"
+            positive: false
+            times:
+              qty: 1
+              days_ago: 123  # EOT negative (~2025-05-15)
+
+          # Weight monitoring (weekly during treatment window; broadened lookback)
+          - loinc: "29463-7"
+            display: "Body weight"
+            range:
+              min: 52
+              max: 56
+            unit: "kg"
+            times:
+              qty: 24
+              lookback_months: 10  # Covers Nov 2024 → May 2025
+
+          # Temperature monitoring (weekly)
+          - loinc: "8310-5"
+            display: "Body temperature"
+            range:
+              min: 36.5
+              max: 37.2
+            unit: "Cel"
+            times:
+              qty: 24
+              lookback_months: 10
+
+          # Hemoglobin monitoring (during treatment)
+          - loinc: "718-7"
+            display: "Hemoglobin [Mass/volume] in Blood"
+            range:
+              min: 11.5
+              max: 13.0
+            unit: "g/dL"
+            times:
+              qty: 3
+              lookback_months: 10
+
+          # Liver function monitoring (due to TB drugs)
+          - loinc: "1742-6"
+            display: "Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma"
+            range:
+              min: 18
+              max: 32
+            unit: "U/L"
+            times:
+              qty: 3
+              lookback_months: 10
+
+          - loinc: "1751-7"
+            display: "Albumin [Mass/volume] in Serum or Plasma"
+            range:
+              min: 3.8
+              max: 4.2
+            unit: "g/dL"
+            times:
+              qty: 3
+              lookback_months: 10
+
+        meds:
+          # Continuation phase (INH + RIF) — now completed
+          - rxnorm: "656659"
+            display: "rifampin 300 MG / isoniazid 150 MG Oral Tablet"
+            sig: "Take 2 tablets by mouth daily on empty stomach"
+            frequency: 1
+            status: "completed"
+            duration_days: 120
+            completed_days_ago: 123   # Completed ~2025-05-15
+            adherence:
+              prob: 0.95  # High adherence with DOT
+
+          # Pyridoxine (Vitamin B6) to prevent peripheral neuropathy — completed with treatment
+          - rxnorm: "198332"
+            display: "pyridoxine 25 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily"
+            frequency: 1
+            status: "completed"
+            duration_days: 180
+            completed_days_ago: 123
+            adherence:
+              prob: 0.95
+
+          # Intensive phase medications (historical record; completed mid-Jan 2025)
+          - rxnorm: "656659"
+            display: "rifampin 300 MG / isoniazid 150 MG Oral Tablet"
+            sig: "Take 2 tablets by mouth daily"
+            frequency: 1
+            duration_days: 60
+            completed_days_ago: 243   # ~2025-01-15
+
+          - rxnorm: "312106"
+            display: "pyrazinamide 500 MG Oral Tablet"
+            sig: "Take 3 tablets by mouth daily"
+            frequency: 1
+            duration_days: 60
+            completed_days_ago: 243
+
+          - rxnorm: "310054"
+            display: "ethambutol 400 MG Oral Tablet"
+            sig: "Take 2 tablets by mouth daily"
+            frequency: 1
+            duration_days: 60
+            completed_days_ago: 243
+
+        encounters:
+
+          # Monthly clinic follow-ups during treatment
+          - type:
+              system: "http://snomed.info/sct"
+              code: "390906007"
+              display: "Follow-up encounter"
+            class: "AMB"
+            qty: 6
+            spread_months: 6
+            reason: "TB treatment monitoring"
+
+          # Initial TB diagnosis encounter
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185347001"
+              display: "Encounter for symptom"
+            class: "AMB"
+            qty: 1
+            days_ago: 309
+            reason: "Persistent cough, weight loss, night sweats"
+
+        immunizations:
+          # BCG vaccine (childhood)
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "19"
+              display: "BCG vaccine"
+            qty: 1
+            days_ago: 10585  # childhood (approx.)
+
+          # COVID-19 vaccines (AstraZeneca)
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "210"
+              display: "COVID-19 vaccine, AstraZeneca"
+            qty: 1
+            days_ago: 1460  # First dose 2021
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "210"
+              display: "COVID-19 vaccine, AstraZeneca"
+            qty: 1
+            days_ago: 1400  # Second dose 2021
+
+          - vaccine:
+              system:
+                "http://hl7.org/fhir/sid/cvx"
+              code: "210"
+              display: "COVID-19 vaccine, AstraZeneca"
+            qty: 1
+            days_ago: 1095  # Booster 2022
+
+          # Hepatitis B series
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "45"
+              display: "Hepatitis B vaccine"
+            qty: 1
+            days_ago: 730  # First dose 2023
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "45"
+              display: "Hepatitis B vaccine"
+            qty: 1
+            days_ago: 700  # Second dose 2023
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "45"
+              display: "Hepatitis B vaccine"
+            qty: 1
+            days_ago: 550  # Third dose 2023
+
+        diagnostic_reports:
+          # Initial TB diagnosis workup
+          - code:
+              system: "http://loinc.org"
+              value: "618-9"
+              display: "TB sputum culture report"
+            status: "final"
+            days_ago: 309
+            conclusion: "Mycobacterium tuberculosis detected. Sputum smear positive (3+). Rifampin sensitive."
+            observations:
+              - loinc: "618-9"
+                display: "Mycobacterium tuberculosis culture"
+                value_type: "boolean"
+                positive: true
+
+          # Chest X-ray baseline
+          - code:
+              system: "http://loinc.org"
+              value: "30746-2"
+              display: "Chest X-ray"
+            status: "final"
+            days_ago: 309
+            conclusion: "Bilateral upper lobe infiltrates consistent with pulmonary tuberculosis. Cavitary lesion noted in right upper lobe."
+
+          # Chest X-ray follow-up (Jan 2025)
+          - code:
+              system: "http://loinc.org"
+              value: "30746-2"
+              display: "Chest X-ray follow-up"
+            status: "final"
+            days_ago: 243
+            conclusion: "Improvement noted. Decreased infiltrates bilaterally. Cavitary lesion showing signs of healing."
+
+          # Month 4 sputum test
+          - code:
+              system: "http://loinc.org"
+              value: "618-9"
+              display: "TB sputum culture report"
+            status: "final"
+            days_ago: 212
+            conclusion: "No acid-fast bacilli seen. Culture negative for Mycobacterium tuberculosis. Treatment responding well."
+            observations:
+              - loinc: "618-9"
+                display: "Mycobacterium tuberculosis culture"
+                value_type: "boolean"
+                positive: false
+
+          # Baseline liver function panel (corrected timing)
+          - code:
+              system: "http://loinc.org"
+              value: "24325-3"
+              display: "Hepatic function panel"
+            status: "final"
+            days_ago: 304  # ~2024-11-15 (treatment start)
+            conclusion: "Normal liver function. Safe to proceed with anti-TB therapy."
+            observations:
+              - loinc: "1742-6"
+                display: "ALT"
+                range:
+                  min: 22
+                  max: 22
+                unit: "U/L"
+              - loinc: "1920-8"
+                display: "AST"
+                range:
+                  min: 24
+                  max: 24
+                unit: "U/L"
+              - loinc: "1975-2"
+                display: "Total bilirubin"
+                range:
+                  min: 0.8
+                  max: 0.8
+                unit: "mg/dL"
+
+          # Liver function monitoring near EOT (corrected timing)
+          - code:
+              system: "http://loinc.org"
+              value: "24325-3"
+              display: "Hepatic function panel"
+            status: "final"
+            days_ago: 123  # ~2025-05-15
+            conclusion: "Liver function remains within normal limits. No hepatotoxicity from TB medications."
+            observations:
+              - loinc: "1742-6"
+                display: "ALT"
+                range:
+                  min: 28
+                  max: 28
+                unit: "U/L"
+              - loinc: "1920-8"
+                display: "AST"
+                range:
+                  min: 26
+                  max: 26
+                unit: "U/L"
+
+          # End-of-treatment sputum confirmation (added)
+          - code:
+              system: "http://loinc.org"
+              value: "618-9"
+              display: "TB sputum culture report"
+            status: "final"
+            days_ago: 123
+            conclusion: "No acid-fast bacilli seen at end of treatment."
+
+output:
+  mode: transaction
+  bundle_size: 100
