@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional
 
 from fhir.resources.address import Address
 from fhir.resources.codeableconcept import CodeableConcept
-from fhir.resources.codeablereference import CodeableReference
 from fhir.resources.coding import Coding
 from fhir.resources.condition import Condition
 from fhir.resources.contactpoint import ContactPoint
@@ -304,9 +303,7 @@ class ResourceFactory:
             id=med_request_id,
             status="active",
             intent="order",
-            medication=CodeableReference(
-                concept=CodeableConcept(coding=[coding])
-            ),
+            medicationCodeableConcept=CodeableConcept(coding=[coding]),
             subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
             authoredOn=datetime.now().strftime("%Y-%m-%dT%H:%M:%S+00:00"),
             dosageInstruction=[dosage]

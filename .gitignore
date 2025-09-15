@@ -48,7 +48,6 @@ dmypy.json
 
 # Output
 output/
-*.json
 *.xml
 bundles/
 
