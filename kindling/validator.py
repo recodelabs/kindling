@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from fhir.resources.bundle import Bundle
 from fhir.resources.resource import Resource
+from pydantic import ValidationError
 
 
 class ValidationResult:
@@ -16,20 +17,20 @@ class ValidationResult:
         self.warnings: List[str] = []
         self.info: List[str] = []
 
-    def add_error(self, message: str):
+    def add_error(self, message: str) -> None:
         """Add an error message."""
         self.errors.append(message)
         self.is_valid = False
 
-    def add_warning(self, message: str):
+    def add_warning(self, message: str) -> None:
         """Add a warning message."""
         self.warnings.append(message)
 
-    def add_info(self, message: str):
+    def add_info(self, message: str) -> None:
         """Add an info message."""
         self.info.append(message)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """String representation of validation result."""
         lines = []
         if self.is_valid:
@@ -70,7 +71,7 @@ class FHIRValidator:
         result = ValidationResult()
 
         # Basic bundle structure validation
-        bundle_dict = bundle.model_dump()
+        bundle_dict = bundle.dict()
         if bundle_dict.get('resourceType') != "Bundle":
             result.add_error(f"Invalid resourceType: {bundle_dict.get('resourceType')}")
 
@@ -94,7 +95,7 @@ class FHIRValidator:
 
         return result
 
-    def _validate_entries(self, bundle: Bundle, result: ValidationResult):
+    def _validate_entries(self, bundle: Bundle, result: ValidationResult) -> None:
         """Validate bundle entries."""
         resource_ids = set()
         references = []
@@ -132,7 +133,7 @@ class FHIRValidator:
         # Check referential integrity
         self._check_references(resource_ids, references, result)
 
-    def _validate_resource(self, resource: Resource, result: ValidationResult, index: int):
+    def _validate_resource(self, resource: Resource, result: ValidationResult, index: int) -> None:
         """Validate individual resource."""
         resource_type = resource.__class__.__name__
 
@@ -152,7 +153,7 @@ class FHIRValidator:
         elif resource_type == "Encounter":
             self._validate_encounter(resource, result, index)
 
-    def _validate_patient(self, patient, result: ValidationResult, index: int):
+    def _validate_patient(self, patient: Any, result: ValidationResult, index: int) -> None:
         """Validate Patient resource."""
         if not patient.name or len(patient.name) == 0:
             result.add_error(f"Patient {index} missing name")
@@ -165,7 +166,7 @@ class FHIRValidator:
         if not patient.birthDate:
             result.add_warning(f"Patient {index} missing birthDate")
 
-    def _validate_condition(self, condition, result: ValidationResult, index: int):
+    def _validate_condition(self, condition: Any, result: ValidationResult, index: int) -> None:
         """Validate Condition resource."""
         if not condition.code:
             result.add_error(f"Condition {index} missing code")
@@ -179,7 +180,7 @@ class FHIRValidator:
         if not condition.verificationStatus:
             result.add_warning(f"Condition {index} missing verificationStatus")
 
-    def _validate_observation(self, observation, result: ValidationResult, index: int):
+    def _validate_observation(self, observation: Any, result: ValidationResult, index: int) -> None:
         """Validate Observation resource."""
         if not observation.status:
             result.add_error(f"Observation {index} missing status")
@@ -192,7 +193,7 @@ class FHIRValidator:
         if not observation.subject:
             result.add_error(f"Observation {index} missing subject")
 
-    def _validate_medication_request(self, med_request, result: ValidationResult, index: int):
+    def _validate_medication_request(self, med_request: Any, result: ValidationResult, index: int) -> None:
         """Validate MedicationRequest resource."""
         if not med_request.status:
             result.add_error(f"MedicationRequest {index} missing status")
@@ -210,7 +211,7 @@ class FHIRValidator:
         if not med_request.subject:
             result.add_error(f"MedicationRequest {index} missing subject")
 
-    def _validate_encounter(self, encounter, result: ValidationResult, index: int):
+    def _validate_encounter(self, encounter: Any, result: ValidationResult, index: int) -> None:
         """Validate Encounter resource."""
         if not encounter.status:
             result.add_error(f"Encounter {index} missing status")
@@ -223,7 +224,7 @@ class FHIRValidator:
         if not encounter.subject:
             result.add_error(f"Encounter {index} missing subject")
 
-    def _check_references(self, resource_ids: set, references: List[Tuple[int, str, str]], result: ValidationResult):
+    def _check_references(self, resource_ids: set, references: List[Tuple[int, str, str]], result: ValidationResult) -> None:
         """Check referential integrity."""
         for index, field, reference in references:
             if not reference.startswith("urn:uuid:") and reference not in resource_ids:
@@ -250,8 +251,14 @@ class FHIRValidator:
         # Try to parse as FHIR Bundle
         try:
             bundle = Bundle.model_validate(data)
-        except Exception as e:
-            result.add_error(f"Invalid FHIR Bundle: {e}")
+        except ValidationError as e:
+            result.add_error(f"Invalid FHIR Bundle structure: {e}")
+            return result
+        except ValueError as e:
+            result.add_error(f"Invalid FHIR Bundle values: {e}")
+            return result
+        except TypeError as e:
+            result.add_error(f"Invalid FHIR Bundle type: {e}")
             return result
 
         # Validate the bundle
@@ -271,7 +278,13 @@ class FHIRValidator:
         try:
             with open(file_path, 'r') as f:
                 json_str = f.read()
-        except Exception as e:
+        except FileNotFoundError as e:
+            result.add_error(f"File not found: {e}")
+            return result
+        except PermissionError as e:
+            result.add_error(f"Permission denied reading file: {e}")
+            return result
+        except IOError as e:
             result.add_error(f"Failed to read file: {e}")
             return result
 

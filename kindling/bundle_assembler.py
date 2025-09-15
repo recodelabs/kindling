@@ -107,7 +107,7 @@ class BundleAssembler:
                 urn_uuid = str(uuid.uuid4())
 
             # Create a copy of the resource without the id field
-            resource_dict = resource.model_dump(exclude_unset=False)
+            resource_dict = resource.dict()
             # Remove the id field
             resource_dict.pop('id', None)
             resource_class = resource.__class__

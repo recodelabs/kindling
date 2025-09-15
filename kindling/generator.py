@@ -1,15 +1,14 @@
 """Core Generator class for Kindling."""
 
-import json
-import random
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, Tuple
 
-from fhir.resources.bundle import Bundle, BundleEntry, BundleEntryRequest
+from fhir.resources.bundle import Bundle
 from fhir.resources.patient import Patient
 
 from .bundle_assembler import BundleAssembler
+from .config import DEMOGRAPHICS
 from .persona_loader import PersonaLoader
 from .profile_parser import ProfileParser
 from .resource_factory import ResourceFactory
@@ -56,7 +55,7 @@ class Generator:
             self.profile = self._persona_to_profile(self.persona_data)
 
     @classmethod
-    def from_profile(cls, profile_path: Union[str, Path], seed: Optional[int] = None):
+    def from_profile(cls, profile_path: Union[str, Path], seed: Optional[int] = None) -> "Generator":
         """Create generator from profile file.
 
         Args:
@@ -68,7 +67,7 @@ class Generator:
         return cls(profile=profile, seed=seed)
 
     @classmethod
-    def from_persona(cls, persona_name: str, seed: Optional[int] = None):
+    def from_persona(cls, persona_name: str, seed: Optional[int] = None) -> "Generator":
         """Create generator from built-in persona.
 
         Args:
@@ -77,7 +76,7 @@ class Generator:
         """
         return cls(persona=persona_name, seed=seed)
 
-    def set_resource_filter(self, resource_types: List[str]):
+    def set_resource_filter(self, resource_types: List[str]) -> None:
         """Set filter for which resource types to include.
 
         Args:
@@ -232,8 +231,8 @@ class Generator:
         # Age
         age_config = demo_config.get("age", {})
         age = self.rng.randint(
-            age_config.get("min", 18),
-            age_config.get("max", 90)
+            age_config.get("min", DEMOGRAPHICS["DEFAULT_AGE_MIN"]),
+            age_config.get("max", DEMOGRAPHICS["DEFAULT_AGE_MAX"])
         )
 
         # Gender
@@ -249,11 +248,11 @@ class Generator:
 
         # Generate name
         if gender == "female":
-            given = [self.rng.choice(["Mary", "Linda", "Sarah", "Emma", "Jennifer"])]
+            given = [self.rng.choice(DEMOGRAPHICS["FEMALE_NAMES"])]
         else:
-            given = [self.rng.choice(["John", "David", "Michael", "Robert", "William"])]
+            given = [self.rng.choice(DEMOGRAPHICS["MALE_NAMES"])]
 
-        family = self.rng.choice(["Smith", "Johnson", "Brown", "Jones", "Miller"])
+        family = self.rng.choice(DEMOGRAPHICS["FAMILY_NAMES"])
 
         return {
             "age": age,

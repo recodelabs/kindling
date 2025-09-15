@@ -1,6 +1,5 @@
 """Factory for creating FHIR resources."""
 
-import uuid
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
@@ -10,18 +9,18 @@ from fhir.resources.codeablereference import CodeableReference
 from fhir.resources.coding import Coding
 from fhir.resources.condition import Condition
 from fhir.resources.contactpoint import ContactPoint
-from fhir.resources.encounter import Encounter, EncounterParticipant
+from fhir.resources.encounter import Encounter
 from fhir.resources.humanname import HumanName
 from fhir.resources.identifier import Identifier
 from fhir.resources.medicationrequest import MedicationRequest
 from fhir.resources.dosage import Dosage
-from fhir.resources.observation import Observation, ObservationComponent
+from fhir.resources.observation import Observation
 from fhir.resources.patient import Patient
 from fhir.resources.period import Period
-from fhir.resources.practitioner import Practitioner
 from fhir.resources.quantity import Quantity
 from fhir.resources.reference import Reference
 
+from .config import SYSTEMS, DEFAULT_ADDRESS, DEFAULT_TELECOM, RESOURCE_DEFAULTS
 from .utils.random_utils import SeededRandom
 
 
@@ -76,7 +75,7 @@ class ResourceFactory:
         if not identifiers:
             identifiers.append(
                 Identifier(
-                    system="http://hospital.example/mrn",
+                    system=SYSTEMS["MRN"],
                     value=f"MRN-{self.rng.uuid()[:8]}"
                 )
             )
@@ -148,6 +147,8 @@ class ResourceFactory:
         Args:
             patient_id: Patient ID reference
             condition_def: Condition definition
+            patient_ref: Optional custom patient reference (defaults to Patient/{patient_id})
+            condition_id: Optional condition ID
 
         Returns:
             Condition resource
@@ -157,7 +158,7 @@ class ResourceFactory:
         # Extract code
         code_data = condition_def.get("code", {})
         coding = Coding(
-            system=code_data.get("system", "http://snomed.info/sct"),
+            system=code_data.get("system", SYSTEMS["SNOMED"]),
             code=code_data.get("value"),
             display=code_data.get("display")
         )
@@ -175,16 +176,16 @@ class ResourceFactory:
             clinicalStatus=CodeableConcept(
                 coding=[
                     Coding(
-                        system="http://terminology.hl7.org/CodeSystem/condition-clinical",
-                        code="active"
+                        system=SYSTEMS["HL7_CONDITION_CLINICAL"],
+                        code=RESOURCE_DEFAULTS["CONDITION_CLINICAL_STATUS"]
                     )
                 ]
             ),
             verificationStatus=CodeableConcept(
                 coding=[
                     Coding(
-                        system="http://terminology.hl7.org/CodeSystem/condition-ver-status",
-                        code="confirmed"
+                        system=SYSTEMS["HL7_CONDITION_VER_STATUS"],
+                        code=RESOURCE_DEFAULTS["CONDITION_VERIFICATION_STATUS"]
                     )
                 ]
             ),
@@ -207,6 +208,8 @@ class ResourceFactory:
         Args:
             patient_id: Patient ID reference
             observation_def: Observation definition
+            patient_ref: Optional custom patient reference (defaults to Patient/{patient_id})
+            observation_id: Optional observation ID
 
         Returns:
             Observation resource
@@ -216,7 +219,7 @@ class ResourceFactory:
         # Extract code (LOINC)
         loinc_code = observation_def.get("loinc")
         coding = Coding(
-            system="http://loinc.org",
+            system=SYSTEMS["LOINC"],
             code=loinc_code,
             display=observation_def.get("display", "")
         )
@@ -245,7 +248,7 @@ class ResourceFactory:
         # Create observation
         observation = Observation(
             id=observation_id,
-            status="final",
+            status=RESOURCE_DEFAULTS["OBSERVATION_STATUS"],
             code=CodeableConcept(coding=[coding]),
             subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
             effectiveDateTime=effective_date.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
@@ -266,6 +269,8 @@ class ResourceFactory:
         Args:
             patient_id: Patient ID reference
             medication_def: Medication definition
+            patient_ref: Optional custom patient reference (defaults to Patient/{patient_id})
+            medication_id: Optional medication request ID
 
         Returns:
             MedicationRequest resource
@@ -275,7 +280,7 @@ class ResourceFactory:
         # Extract medication code (RxNorm)
         rxnorm_code = medication_def.get("rxnorm")
         coding = Coding(
-            system="http://www.nlm.nih.gov/research/umls/rxnorm",
+            system=SYSTEMS["RXNORM"],
             code=rxnorm_code,
             display=medication_def.get("display", "")
         )
@@ -302,8 +307,8 @@ class ResourceFactory:
         # Create medication request
         med_request = MedicationRequest(
             id=med_request_id,
-            status="active",
-            intent="order",
+            status=RESOURCE_DEFAULTS["MEDICATION_REQUEST_STATUS"],
+            intent=RESOURCE_DEFAULTS["MEDICATION_REQUEST_INTENT"],
             medication=CodeableReference(
                 concept=CodeableConcept(coding=[coding])
             ),
@@ -326,6 +331,8 @@ class ResourceFactory:
         Args:
             patient_id: Patient ID reference
             encounter_def: Encounter definition
+            patient_ref: Optional custom patient reference (defaults to Patient/{patient_id})
+            encounter_id: Optional encounter ID
 
         Returns:
             Encounter resource
@@ -376,7 +383,7 @@ class ResourceFactory:
         # Create encounter
         encounter = Encounter(
             id=encounter_id,
-            status="finished",
+            status=RESOURCE_DEFAULTS["ENCOUNTER_STATUS"],
             class_fhir=encounter_class,
             type=[encounter_type],
             subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),

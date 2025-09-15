@@ -1,0 +1,565 @@
+{
+  "resourceType": "Bundle",
+  "id": "83189aee-d1b9-4ba0-afff-e6aa848e2b2c",
+  "type": "transaction",
+  "timestamp": "2025-09-15T13:44:32+00:00",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d",
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "system": "http://hospital.example/mrn",
+            "value": "MRN-NOMSA-001"
+          }
+        ],
+        "name": [
+          {
+            "family": "Dlamini",
+            "given": [
+              "Nomsa"
+            ]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+27-31-555-1234",
+            "use": "home"
+          },
+          {
+            "system": "email",
+            "value": "nomsa.dlamini@example.com",
+            "use": "home"
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1985-03-15",
+        "address": [
+          {
+            "line": [
+              "42 Durban Road"
+            ],
+            "city": "Pietermaritzburg",
+            "state": "KwaZulu-Natal",
+            "postalCode": "3201",
+            "country": "ZA"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient",
+        "ifNoneExist": "identifier=http://hospital.example/mrn|MRN-NOMSA-001"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c40cea7c-f775-3671-4bcd-6d755e02a45d",
+      "resource": {
+        "resourceType": "Condition",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "44054006",
+              "display": "Type 2 diabetes mellitus"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "onsetDateTime": "2019-09-17"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Condition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e2624a0f-7540-1f1b-55f2-32a4192856a5",
+      "resource": {
+        "resourceType": "Condition",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "84114007",
+              "display": "Recurrent malaria"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "onsetDateTime": "2024-09-15"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Condition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:1575a89c-c181-efa3-7f63-f6b975646b54",
+      "resource": {
+        "resourceType": "Condition",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "160357008",
+              "display": "Family history of diabetes mellitus"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "onsetDateTime": "2015-09-18"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Condition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e70eb52d-86e4-bcbc-75b5-7bb3cb19cdf9",
+      "resource": {
+        "resourceType": "Condition",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "161468007",
+              "display": "Family history of stroke"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "onsetDateTime": "2017-09-17"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Condition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c13738a8-2b41-72bd-a2a2-c5116fb83be8",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "4548-4",
+              "display": "Hemoglobin A1c"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "effectiveDateTime": "2025-08-27T13:44:32+00:00",
+        "valueQuantity": {
+          "value": 7.87,
+          "unit": "%",
+          "system": "http://unitsofmeasure.org",
+          "code": "%"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:a091d02c-926a-9c64-b48b-015d76eba4cb",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2339-0",
+              "display": "Glucose"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "effectiveDateTime": "2025-08-17T13:44:32+00:00",
+        "valueQuantity": {
+          "value": 183.54,
+          "unit": "mg/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "mg/dL"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:ab8356bd-d03c-aabd-d935-407f9c65ec47",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "85354-9",
+              "display": "Blood pressure panel"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "effectiveDateTime": "2025-08-17T13:44:32+00:00",
+        "valueQuantity": {
+          "value": 37.76,
+          "unit": "1",
+          "system": "http://unitsofmeasure.org",
+          "code": "1"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:dfd9dd55-561e-8817-d175-a8c715f68cb2",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "39156-5",
+              "display": "Body mass index (BMI)"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "effectiveDateTime": "2025-09-03T13:44:32+00:00",
+        "valueQuantity": {
+          "value": 27.67,
+          "unit": "kg/m2",
+          "system": "http://unitsofmeasure.org",
+          "code": "kg/m2"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:45062ab5-3d34-1c80-b464-ccff30dd7c22",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "51663-7",
+              "display": "Malaria smear"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "effectiveDateTime": "2025-08-26T13:44:32+00:00",
+        "valueQuantity": {
+          "value": 24.06,
+          "unit": "1",
+          "system": "http://unitsofmeasure.org",
+          "code": "1"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:158b458c-0be9-0088-a932-c833eb84b40a",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2160-0",
+              "display": "Creatinine"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "effectiveDateTime": "2025-09-02T13:44:32+00:00",
+        "valueQuantity": {
+          "value": 1.11,
+          "unit": "mg/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "mg/dL"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:0c63c350-50a4-ce90-8edc-ef88bf892e96",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2093-3",
+              "display": "Total Cholesterol"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "effectiveDateTime": "2025-08-22T13:44:32+00:00",
+        "valueQuantity": {
+          "value": 183.55,
+          "unit": "mg/dL",
+          "system": "http://unitsofmeasure.org",
+          "code": "mg/dL"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:557a32de-cfc0-a5a1-e845-c9a24000892e",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "29463-7",
+              "display": "Body weight"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "effectiveDateTime": "2025-09-06T13:44:32+00:00",
+        "valueQuantity": {
+          "value": 70.68,
+          "unit": "kg",
+          "system": "http://unitsofmeasure.org",
+          "code": "kg"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cd346102-5164-6b3f-5806-76721992e69c",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "status": "active",
+        "intent": "order",
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "authoredOn": "2025-09-15T13:44:32+00:00",
+        "dosageInstruction": [
+          {
+            "text": "Take 1 tablet by mouth twice daily with meals",
+            "timing": {
+              "repeat": {
+                "frequency": 2,
+                "period": 1.0,
+                "periodUnit": "d"
+              }
+            }
+          }
+        ],
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "860974",
+              "display": "metformin 500 MG Oral Tablet"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "MedicationRequest"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e24f464f-473f-5d5e-0c2b-96f8ed030099",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "status": "active",
+        "intent": "order",
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "authoredOn": "2025-09-15T13:44:32+00:00",
+        "dosageInstruction": [
+          {
+            "text": "Take 1 tablet by mouth once daily before breakfast",
+            "timing": {
+              "repeat": {
+                "frequency": 1,
+                "period": 1.0,
+                "periodUnit": "d"
+              }
+            }
+          }
+        ],
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "310490",
+              "display": "glibenclamide 5 MG Oral Tablet"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "MedicationRequest"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:5e049ed5-7f3a-fe0b-763a-78b8ac045aad",
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "status": "active",
+        "intent": "order",
+        "subject": {
+          "reference": "urn:uuid:e5ad344d-4c55-c371-0a0f-9eff8181621d"
+        },
+        "authoredOn": "2025-09-15T13:44:32+00:00",
+        "dosageInstruction": [
+          {
+            "text": "Take 4 tablets twice daily for 3 days",
+            "timing": {
+              "repeat": {
+                "frequency": 2,
+                "period": 1.0,
+                "periodUnit": "d"
+              }
+            }
+          }
+        ],
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+              "code": "2176766",
+              "display": "artemether 20 MG / lumefantrine 120 MG Oral Tablet"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "MedicationRequest"
+      }
+    }
+  ]
+}
