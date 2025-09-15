@@ -1,0 +1,280 @@
+version: "0.1"
+name: nomsa_diabetes_malaria
+description: "40-year-old female with Type 2 Diabetes and recurring malaria"
+
+patient:
+  identifiers:
+    - system: "http://hospital.example/mrn"
+      value: "MRN-NOMSA-001"
+  name:
+    family: "Dlamini"
+    given: ["Nomsa"]
+  gender: female
+  birthDate: "1985-03-15"
+  address:
+    line: ["42 Durban Road"]
+    city: "Pietermaritzburg"
+    state: "KwaZulu-Natal"
+    postalCode: "3201"
+    country: "ZA"
+  phone: "+27-31-555-1234"
+  email: "nomsa.dlamini@example.com"
+
+resources:
+  include:
+    - Patient
+    - Practitioner
+    - Organization
+    - Encounter
+    - Condition
+    - Observation
+    - MedicationRequest
+    - Immunization
+    - Coverage
+    - RelatedPerson
+
+  rules:
+    - name: diabetes_and_malaria_conditions
+      when:
+        condition: "true"
+      then:
+        add_conditions:
+          - code:
+              system: "http://snomed.info/sct"
+              value: "44054006"
+              display: "Type 2 diabetes mellitus"
+            onset:
+              years_ago: 6  # Diagnosed in 2019
+
+          - code:
+              system: "http://snomed.info/sct"
+              value: "84114007"
+              display: "Recurrent malaria"
+            onset:
+              days_ago: 30  # January 2025 episode
+
+          - code:
+              system: "http://snomed.info/sct"
+              value: "160357008"
+              display: "Family history of diabetes mellitus"
+            onset:
+              years_ago: 10
+
+          - code:
+              system: "http://snomed.info/sct"
+              value: "161468007"
+              display: "Family history of stroke"
+            onset:
+              years_ago: 8
+
+        add_observations:
+          # HbA1c (poorly controlled)
+          - loinc: "4548-4"
+            display: "Hemoglobin A1c"
+            range:
+              min: 7.8
+              max: 8.5
+            unit: "%"
+            times:
+              qty: 4
+              lookback_months: 24
+            latest_value: 8.2
+
+          # Blood glucose (elevated)
+          - loinc: "2339-0"
+            display: "Glucose"
+            range:
+              min: 140
+              max: 200
+            unit: "mg/dL"
+            times:
+              qty: 24
+              lookback_months: 12
+            latest_value: 180
+
+          # Blood pressure (slightly elevated due to diabetes)
+          - loinc: "85354-9"
+            display: "Blood pressure panel"
+            components:
+              - loinc: "8480-6"
+                display: "Systolic blood pressure"
+                range:
+                  min: 125
+                  max: 135
+                unit: "mmHg"
+              - loinc: "8462-4"
+                display: "Diastolic blood pressure"
+                range:
+                  min: 75
+                  max: 85
+                unit: "mmHg"
+            times:
+              qty: 12
+              lookback_months: 12
+
+          # BMI (slightly overweight)
+          - loinc: "39156-5"
+            display: "Body mass index (BMI)"
+            range:
+              min: 26
+              max: 28
+            unit: "kg/m2"
+            times:
+              qty: 4
+              lookback_months: 24
+
+          # Malaria rapid diagnostic test
+          - loinc: "51663-7"
+            display: "Malaria smear"
+            value_type: "boolean"
+            positive: true
+            times:
+              qty: 1
+              days_ago: 30
+
+          # Kidney function (monitoring for diabetic nephropathy)
+          - loinc: "2160-0"
+            display: "Creatinine"
+            range:
+              min: 0.9
+              max: 1.2
+            unit: "mg/dL"
+            times:
+              qty: 4
+              lookback_months: 24
+
+          # Lipid panel
+          - loinc: "2093-3"
+            display: "Total Cholesterol"
+            range:
+              min: 180
+              max: 210
+            unit: "mg/dL"
+            times:
+              qty: 2
+              lookback_months: 24
+
+          # Weight monitoring
+          - loinc: "29463-7"
+            display: "Body weight"
+            range:
+              min: 68
+              max: 72
+            unit: "kg"
+            times:
+              qty: 12
+              lookback_months: 12
+
+        meds:
+          - rxnorm: "860974"
+            display: "metformin 500 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth twice daily with meals"
+            frequency: 2
+            adherence:
+              prob: 0.85
+
+          - rxnorm: "310490"
+            display: "glibenclamide 5 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth once daily before breakfast"
+            frequency: 1
+            adherence:
+              prob: 0.82
+
+          # Completed antimalarial course
+          - rxnorm: "2176766"
+            display: "artemether 20 MG / lumefantrine 120 MG Oral Tablet"
+            sig: "Take 4 tablets twice daily for 3 days"
+            frequency: 2
+            duration_days: 3
+            completed_days_ago: 20
+
+        encounters:
+          # Monthly CHW diabetes checks
+          - type:
+              system: "http://snomed.info/sct"
+              code: "390847004"
+              display: "Diabetes follow-up"
+            class: "HH"  # Home health
+            qty: 12
+            spread_months: 12
+            performer: "Community Health Worker"
+
+          # February 2025 CHW visit
+          - type:
+              system: "http://snomed.info/sct"
+              code: "439708006"
+              display: "Home visit"
+            class: "HH"
+            qty: 1
+            days_ago: 15
+            notes: "Blood glucose check, medication adherence counseling"
+
+          # January 2025 malaria treatment
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185345009"
+              display: "Encounter for infectious disease"
+            class: "AMB"
+            qty: 1
+            days_ago: 30
+            reason: "Malaria - rapid diagnostic test positive"
+
+          # December 2024 CHW monthly check
+          - type:
+              system: "http://snomed.info/sct"
+              code: "439708006"
+              display: "Home visit"
+            class: "HH"
+            qty: 1
+            days_ago: 60
+            notes: "Weight monitoring, foot examination"
+
+          # Quarterly diabetes clinic visits
+          - type:
+              system: "http://snomed.info/sct"
+              code: "390847004"
+              display: "Diabetes follow-up"
+            class: "AMB"
+            qty: 4
+            spread_months: 12
+
+        immunizations:
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "37"
+              display: "Yellow fever vaccine"
+            qty: 1
+            days_ago: 2555  # 2018
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "212"
+              display: "COVID-19 vaccine, Johnson & Johnson"
+            qty: 2
+            days_ago: 1460  # 2021
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "140"
+              display: "Influenza, seasonal"
+            qty: 1
+            days_ago: 365  # 2024
+
+        related_persons:
+          - relationship: "child"
+            name:
+              family: "Dlamini"
+              given: ["Sipho"]
+            gender: male
+            birthDate: "2008-06-08"
+
+          - relationship: "child"
+            name:
+              family: "Dlamini"
+              given: ["Thandiwe"]
+            gender: female
+            birthDate: "2012-10-22"
+
+output:
+  mode: transaction
+  bundle_size: 100
