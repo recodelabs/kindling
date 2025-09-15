@@ -4,7 +4,7 @@ import json
 import random
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple
 
 from fhir.resources.bundle import Bundle, BundleEntry, BundleEntryRequest
 from fhir.resources.patient import Patient
@@ -90,6 +90,7 @@ class Generator:
         count: int = 1,
         bundle_type: str = "transaction",
         bundle_size: int = 100,
+        request_method: str = "POST",
     ) -> Union[Bundle, List[Bundle]]:
         """Generate FHIR resources based on profile/persona.
 
@@ -97,6 +98,7 @@ class Generator:
             count: Number of patients to generate (for cohort mode)
             bundle_type: Type of bundle ("transaction" or "collection")
             bundle_size: Maximum resources per bundle
+            request_method: HTTP method for transaction bundles ("POST" or "PUT")
 
         Returns:
             Single bundle or list of bundles
@@ -105,62 +107,102 @@ class Generator:
 
         if mode == "single":
             # Generate single patient
-            resources = self._generate_single_patient()
+            resources, urn_mapping = self._generate_single_patient(request_method)
             bundle = self.bundle_assembler.create_bundle(
-                resources, bundle_type=bundle_type
+                resources, bundle_type=bundle_type, request_method=request_method,
+                urn_mapping=urn_mapping
             )
             return bundle
         else:
             # Generate cohort
             all_resources = []
+            all_urn_mappings = {}
             for i in range(count):
-                patient_resources = self._generate_patient(i)
+                patient_resources, urn_mapping = self._generate_patient(i, request_method)
                 all_resources.extend(patient_resources)
+                all_urn_mappings.update(urn_mapping)
 
             # Split into bundles if needed
             bundles = self.bundle_assembler.create_bundles(
                 all_resources,
                 bundle_type=bundle_type,
-                bundle_size=bundle_size
+                bundle_size=bundle_size,
+                request_method=request_method,
+                urn_mapping=all_urn_mappings
             )
 
             return bundles[0] if len(bundles) == 1 else bundles
 
-    def _generate_single_patient(self) -> List[Any]:
-        """Generate resources for a single patient."""
+    def _generate_single_patient(self, request_method: str = "POST") -> Tuple[List[Any], Dict[str, str]]:
+        """Generate resources for a single patient.
+
+        Args:
+            request_method: HTTP method for transaction bundles
+
+        Returns:
+            Tuple of (resources, urn_mapping)
+        """
         resources = []
+        urn_mapping = {}
 
         # Get patient definition from profile
         patient_def = self.profile.get("single_patient", {})
 
+        # Generate IDs
+        patient_id = self.rng.uuid()
+        patient_urn = self.rng.uuid() if request_method == "POST" else patient_id
+
+        # Track URN mapping for POST method
+        if request_method == "POST":
+            urn_mapping[patient_id] = patient_urn
+
         # Create patient
         patient = self.resource_factory.create_patient(
             patient_def,
-            patient_id=self.rng.uuid()
+            patient_id=patient_id
         )
         resources.append(patient)
 
         # Apply rules to generate additional resources
         rules = self.profile.get("resources", {}).get("rules", [])
         for rule in rules:
-            rule_resources = self._apply_rule(rule, patient)
+            rule_resources, rule_urn_mapping = self._apply_rule(
+                rule, patient, patient_urn if request_method == "POST" else patient_id, request_method
+            )
             resources.extend(rule_resources)
+            urn_mapping.update(rule_urn_mapping)
 
         # Filter resources if filter is set
         if self.resource_filter:
             resources = self._filter_resources(resources)
 
-        return resources
+        return resources, urn_mapping
 
-    def _generate_patient(self, index: int) -> List[Any]:
-        """Generate resources for a cohort patient."""
+    def _generate_patient(self, index: int, request_method: str = "POST") -> Tuple[List[Any], Dict[str, str]]:
+        """Generate resources for a cohort patient.
+
+        Args:
+            index: Patient index in cohort
+            request_method: HTTP method for transaction bundles
+
+        Returns:
+            Tuple of (resources, urn_mapping)
+        """
         resources = []
+        urn_mapping = {}
 
         # Generate demographics based on profile
         demographics = self._generate_demographics()
 
-        # Create patient
+        # Generate IDs
         patient_id = self.rng.uuid()
+        patient_urn = self.rng.uuid() if request_method == "POST" else patient_id
+
+        # Track URN mapping for POST method
+        if request_method == "POST":
+            urn_mapping[patient_id] = patient_urn
+
+        # Create patient
         patient = self.resource_factory.create_patient(
             demographics,
             patient_id=patient_id
@@ -171,14 +213,17 @@ class Generator:
         rules = self.profile.get("resources", {}).get("rules", [])
         for rule in rules:
             if self._evaluate_rule_condition(rule, demographics):
-                rule_resources = self._apply_rule(rule, patient)
+                rule_resources, rule_urn_mapping = self._apply_rule(
+                    rule, patient, patient_urn if request_method == "POST" else patient_id, request_method
+                )
                 resources.extend(rule_resources)
+                urn_mapping.update(rule_urn_mapping)
 
         # Filter resources if filter is set
         if self.resource_filter:
             resources = self._filter_resources(resources)
 
-        return resources
+        return resources, urn_mapping
 
     def _generate_demographics(self) -> Dict[str, Any]:
         """Generate random demographics based on profile."""
@@ -236,36 +281,68 @@ class Generator:
 
         return False
 
-    def _apply_rule(self, rule: Dict[str, Any], patient: Patient) -> List[Any]:
-        """Apply a rule to generate resources."""
+    def _apply_rule(self, rule: Dict[str, Any], patient: Patient, patient_ref: str, request_method: str = "POST") -> Tuple[List[Any], Dict[str, str]]:
+        """Apply a rule to generate resources.
+
+        Args:
+            rule: Rule definition
+            patient: Patient resource
+            patient_ref: Reference to use for patient (URN UUID or regular ID)
+            request_method: HTTP method for transaction bundles
+
+        Returns:
+            Tuple of (resources, urn_mapping)
+        """
         resources = []
+        urn_mapping = {}
         then = rule.get("then", {})
 
         # Add conditions
         for condition_def in then.get("add_conditions", []):
+            condition_id = self.rng.uuid()
+            if request_method == "POST":
+                condition_urn = self.rng.uuid()
+                urn_mapping[condition_id] = condition_urn
+
             condition = self.resource_factory.create_condition(
                 patient_id=patient.id,
-                condition_def=condition_def
+                patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
+                condition_def=condition_def,
+                condition_id=condition_id
             )
             resources.append(condition)
 
         # Add observations
         for obs_def in then.get("add_observations", []):
+            obs_id = self.rng.uuid()
+            if request_method == "POST":
+                obs_urn = self.rng.uuid()
+                urn_mapping[obs_id] = obs_urn
+
             observation = self.resource_factory.create_observation(
                 patient_id=patient.id,
-                observation_def=obs_def
+                patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
+                observation_def=obs_def,
+                observation_id=obs_id
             )
             resources.append(observation)
 
         # Add medications
         for med_def in then.get("meds", []):
+            med_id = self.rng.uuid()
+            if request_method == "POST":
+                med_urn = self.rng.uuid()
+                urn_mapping[med_id] = med_urn
+
             medication = self.resource_factory.create_medication_request(
                 patient_id=patient.id,
-                medication_def=med_def
+                patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
+                medication_def=med_def,
+                medication_id=med_id
             )
             resources.append(medication)
 
-        return resources
+        return resources, urn_mapping
 
     def _persona_to_profile(self, persona_data: Dict[str, Any]) -> Dict[str, Any]:
         """Convert persona data to profile format."""

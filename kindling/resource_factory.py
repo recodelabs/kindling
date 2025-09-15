@@ -139,7 +139,9 @@ class ResourceFactory:
     def create_condition(
         self,
         patient_id: str,
-        condition_def: Dict[str, Any]
+        condition_def: Dict[str, Any],
+        patient_ref: Optional[str] = None,
+        condition_id: Optional[str] = None
     ) -> Condition:
         """Create a Condition resource.
 
@@ -150,7 +152,7 @@ class ResourceFactory:
         Returns:
             Condition resource
         """
-        condition_id = self.rng.uuid()
+        condition_id = condition_id or self.rng.uuid()
 
         # Extract code
         code_data = condition_def.get("code", {})
@@ -187,7 +189,7 @@ class ResourceFactory:
                 ]
             ),
             code=CodeableConcept(coding=[coding]),
-            subject=Reference(reference=f"Patient/{patient_id}"),
+            subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
             onsetDateTime=onset_date.strftime("%Y-%m-%d")
         )
 
@@ -196,7 +198,9 @@ class ResourceFactory:
     def create_observation(
         self,
         patient_id: str,
-        observation_def: Dict[str, Any]
+        observation_def: Dict[str, Any],
+        patient_ref: Optional[str] = None,
+        observation_id: Optional[str] = None
     ) -> Observation:
         """Create an Observation resource.
 
@@ -207,7 +211,7 @@ class ResourceFactory:
         Returns:
             Observation resource
         """
-        observation_id = self.rng.uuid()
+        observation_id = observation_id or self.rng.uuid()
 
         # Extract code (LOINC)
         loinc_code = observation_def.get("loinc")
@@ -243,7 +247,7 @@ class ResourceFactory:
             id=observation_id,
             status="final",
             code=CodeableConcept(coding=[coding]),
-            subject=Reference(reference=f"Patient/{patient_id}"),
+            subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
             effectiveDateTime=effective_date.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
             valueQuantity=quantity
         )
@@ -253,7 +257,9 @@ class ResourceFactory:
     def create_medication_request(
         self,
         patient_id: str,
-        medication_def: Dict[str, Any]
+        medication_def: Dict[str, Any],
+        patient_ref: Optional[str] = None,
+        medication_id: Optional[str] = None
     ) -> MedicationRequest:
         """Create a MedicationRequest resource.
 
@@ -264,7 +270,7 @@ class ResourceFactory:
         Returns:
             MedicationRequest resource
         """
-        med_request_id = self.rng.uuid()
+        med_request_id = medication_id or self.rng.uuid()
 
         # Extract medication code (RxNorm)
         rxnorm_code = medication_def.get("rxnorm")
@@ -301,7 +307,7 @@ class ResourceFactory:
             medication=CodeableReference(
                 concept=CodeableConcept(coding=[coding])
             ),
-            subject=Reference(reference=f"Patient/{patient_id}"),
+            subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
             authoredOn=datetime.now().strftime("%Y-%m-%dT%H:%M:%S+00:00"),
             dosageInstruction=[dosage]
         )
@@ -311,7 +317,9 @@ class ResourceFactory:
     def create_encounter(
         self,
         patient_id: str,
-        encounter_def: Dict[str, Any]
+        encounter_def: Dict[str, Any],
+        patient_ref: Optional[str] = None,
+        encounter_id: Optional[str] = None
     ) -> Encounter:
         """Create an Encounter resource.
 
@@ -322,7 +330,7 @@ class ResourceFactory:
         Returns:
             Encounter resource
         """
-        encounter_id = self.rng.uuid()
+        encounter_id = encounter_id or self.rng.uuid()
 
         # Encounter class
         encounter_class = Coding(
@@ -371,7 +379,7 @@ class ResourceFactory:
             status="finished",
             class_fhir=encounter_class,
             type=[encounter_type],
-            subject=Reference(reference=f"Patient/{patient_id}"),
+            subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
             period=period
         )
 

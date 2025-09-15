@@ -2,14 +2,22 @@
 
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 import click
 
 from .generator import Generator
 from .persona_loader import PersonaLoader
 from .validator import FHIRValidator
+
+
+def datetime_json_encoder(obj: Any) -> str:
+    """Custom JSON encoder for datetime objects to use ISO format with T separator."""
+    if isinstance(obj, datetime):
+        return obj.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    return str(obj)
 
 
 @click.command()
@@ -76,6 +84,12 @@ from .validator import FHIRValidator
     type=str,
     help="Comma-separated list of resources to include (e.g., Patient,Condition,Observation)"
 )
+@click.option(
+    "--request-method",
+    type=click.Choice(["POST", "PUT", "CONDITIONAL"]),
+    default="POST",
+    help="HTTP method for transaction bundles (POST=server assigns ID, PUT=upsert with ID, CONDITIONAL=match by identifier)"
+)
 def main(
     profile: Optional[str],
     persona: Optional[str],
@@ -88,7 +102,8 @@ def main(
     server: Optional[str],
     validate: bool,
     dry_run: bool,
-    resources: Optional[str]
+    resources: Optional[str],
+    request_method: str
 ):
     """Kindling - Lightweight FHIR synthetic data generator.
 
@@ -136,10 +151,15 @@ def main(
 
         # Generate data
         click.echo(f"Generating {count} patient(s)...", err=True)
+        if request_method == "PUT":
+            click.echo(f"Using PUT method - upsert with generated IDs", err=True)
+        elif request_method == "CONDITIONAL":
+            click.echo(f"Using conditional create - match by identifier", err=True)
         result = generator.generate(
             count=count,
             bundle_type=bundle_type,
-            bundle_size=bundle_size
+            bundle_size=bundle_size,
+            request_method=request_method
         )
 
         # Handle validation
@@ -179,7 +199,7 @@ def main(
                 if output_path.suffix == ".json":
                     # Single file with array
                     with open(output_path, 'w') as f:
-                        json.dump([b.model_dump() for b in result], f, indent=2, default=str)
+                        json.dump([b.model_dump() for b in result], f, indent=2, default=datetime_json_encoder)
                     click.echo(f"Wrote {len(result)} bundles to {output_path}", err=True)
                 else:
                     # Directory with multiple files
@@ -187,7 +207,7 @@ def main(
                     for i, bundle in enumerate(result):
                         bundle_file = output_path / f"bundle_{i:04d}.json"
                         with open(bundle_file, 'w') as f:
-                            json.dump(bundle.model_dump(), f, indent=2, default=str)
+                            json.dump(bundle.model_dump(), f, indent=2, default=datetime_json_encoder)
                     click.echo(f"Wrote {len(result)} bundles to {output_path}/", err=True)
             else:
                 # Output to stdout
@@ -197,7 +217,7 @@ def main(
             # Single bundle
             if output:
                 with open(output, 'w') as f:
-                    json.dump(result.model_dump(), f, indent=2, default=str)
+                    json.dump(result.model_dump(), f, indent=2, default=datetime_json_encoder)
                 click.echo(f"Wrote bundle to {output}", err=True)
             else:
                 click.echo(result.model_dump_json(indent=2))
