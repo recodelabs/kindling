@@ -21,7 +21,7 @@ class TestBundleValidation:
         bundle = gen.generate()
 
         # Should be able to serialize to JSON without errors
-        json_str = bundle.model_dump_json(indent=2)
+        json_str = bundle.json(indent=2)
         assert json_str is not None
 
         # Should be able to parse back from JSON
@@ -37,7 +37,7 @@ class TestBundleValidation:
         bundle = gen.generate()
 
         # Validate bundle has required fields
-        bundle_dict = bundle.model_dump()
+        bundle_dict = bundle.dict()
         assert bundle_dict['resourceType'] == "Bundle"
         assert bundle.type in ["transaction", "collection", "document", "message", "history", "searchset", "batch"]
         assert bundle.id is not None
@@ -69,7 +69,9 @@ class TestBundleValidation:
             resource_types.add(resource.__class__.__name__)
 
             # Common resource validations
-            assert resource.id is not None
+            # In transaction bundles, resources use URNs in fullUrl instead of ids
+            assert entry.fullUrl is not None
+            assert entry.fullUrl.startswith("urn:uuid:")
 
             # Resource-specific validations
             if isinstance(resource, Patient):
@@ -89,7 +91,7 @@ class TestBundleValidation:
 
     def _validate_patient(self, patient: Patient):
         """Validate Patient resource."""
-        assert patient.model_dump()['resourceType'] == "Patient"
+        assert patient.dict()['resourceType'] == "Patient"
         assert patient.name is not None and len(patient.name) > 0
         assert patient.gender in ["male", "female", "other", "unknown"]
         assert patient.birthDate is not None
@@ -101,7 +103,7 @@ class TestBundleValidation:
 
     def _validate_condition(self, condition: Condition):
         """Validate Condition resource."""
-        assert condition.model_dump()['resourceType'] == "Condition"
+        assert condition.dict()['resourceType'] == "Condition"
         assert condition.code is not None
         assert condition.subject is not None
         assert condition.subject.reference is not None
@@ -110,7 +112,7 @@ class TestBundleValidation:
 
     def _validate_observation(self, observation: Observation):
         """Validate Observation resource."""
-        assert observation.model_dump()['resourceType'] == "Observation"
+        assert observation.dict()['resourceType'] == "Observation"
         assert observation.status in ["registered", "preliminary", "final", "amended", "corrected", "cancelled", "entered-in-error", "unknown"]
         assert observation.code is not None
         assert observation.subject is not None
@@ -122,7 +124,7 @@ class TestBundleValidation:
 
     def _validate_medication_request(self, med_request: MedicationRequest):
         """Validate MedicationRequest resource."""
-        assert med_request.model_dump()['resourceType'] == "MedicationRequest"
+        assert med_request.dict()['resourceType'] == "MedicationRequest"
         assert med_request.status in ["active", "on-hold", "cancelled", "completed", "entered-in-error", "stopped", "draft", "unknown"]
         assert med_request.intent in ["proposal", "plan", "order", "original-order", "reflex-order", "filler-order", "instance-order", "option"]
         assert med_request.medication is not None
@@ -133,18 +135,19 @@ class TestBundleValidation:
         gen = Generator.from_persona("mary_diabetes", seed=42)
         bundle = gen.generate()
 
-        # Collect all resource IDs
-        resource_ids = set()
-        patient_id = None
+        # Collect all resource URNs (transaction bundles use URNs)
+        resource_urns = set()
+        patient_urn = None
 
         for entry in bundle.entry:
             resource = entry.resource
-            resource_ids.add(f"{resource.__class__.__name__}/{resource.id}")
+            # In transaction bundles, resources are identified by URNs
+            resource_urns.add(entry.fullUrl)
 
             if isinstance(resource, Patient):
-                patient_id = resource.id
+                patient_urn = entry.fullUrl
 
-        assert patient_id is not None
+        assert patient_urn is not None
 
         # Check that all references point to existing resources
         for entry in bundle.entry:
@@ -153,8 +156,8 @@ class TestBundleValidation:
             # Check subject references
             if hasattr(resource, "subject") and resource.subject:
                 ref = resource.subject.reference
-                # Should reference the patient
-                assert ref == f"Patient/{patient_id}"
+                # Should reference the patient URN in transaction bundles
+                assert ref == patient_urn
 
     def test_persona_consistency(self):
         """Test that generated data is consistent with persona definition."""
@@ -266,13 +269,13 @@ class TestBundleValidation:
         bundle = gen.generate()
 
         # Serialize to JSON
-        json_str = bundle.model_dump_json(indent=2)
+        json_str = bundle.json(indent=2)
 
         # Parse back using fhir.resources
-        parsed_bundle = Bundle.model_validate_json(json_str)
+        parsed_bundle = Bundle.parse_raw(json_str)
 
         assert parsed_bundle is not None
-        assert parsed_bundle.model_dump()['resourceType'] == "Bundle"
+        assert parsed_bundle.dict()['resourceType'] == "Bundle"
         assert len(parsed_bundle.entry) == len(bundle.entry)
 
         # Validate each entry can be parsed

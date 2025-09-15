@@ -341,6 +341,14 @@ class Generator:
             )
             resources.append(medication)
 
+        # Add related persons with symmetrical relationships
+        for related_def in then.get("related_persons", []):
+            related_resources, related_urn_mapping = self._create_symmetrical_related_persons(
+                patient, patient_ref, related_def, request_method
+            )
+            resources.extend(related_resources)
+            urn_mapping.update(related_urn_mapping)
+
         return resources, urn_mapping
 
     def _persona_to_profile(self, persona_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -355,6 +363,143 @@ class Generator:
                 "bundle_size": 100
             })
         }
+
+    def _create_symmetrical_related_persons(
+        self,
+        patient: Patient,
+        patient_ref: str,
+        related_def: Dict[str, Any],
+        request_method: str = "POST"
+    ) -> Tuple[List[Any], Dict[str, str]]:
+        """Create symmetrical RelatedPerson resources.
+
+        Creates two RelatedPerson resources:
+        1. The related person linked to the main patient
+        2. A new Patient for the related person, and a RelatedPerson linking back
+
+        Args:
+            patient: Main patient resource
+            patient_ref: Reference to use for patient (URN UUID or regular ID)
+            related_def: Related person definition
+            request_method: HTTP method for transaction bundles
+
+        Returns:
+            Tuple of (resources, urn_mapping)
+        """
+        resources = []
+        urn_mapping = {}
+
+        # Create the related person's Patient resource
+        related_patient_id = self.rng.uuid()
+        related_patient_urn = self.rng.uuid() if request_method == "POST" else related_patient_id
+
+        if request_method == "POST":
+            urn_mapping[related_patient_id] = related_patient_urn
+
+        # Create Patient for the related person
+        related_patient_def = {
+            "name": related_def.get("name", {}),
+            "gender": related_def.get("gender", "unknown"),
+            "birthDate": related_def.get("birthDate")
+        }
+
+        # Add identifiers if provided
+        if "identifiers" in related_def:
+            related_patient_def["identifiers"] = related_def["identifiers"]
+
+        # Add contact info if provided
+        if "phone" in related_def:
+            related_patient_def["phone"] = related_def["phone"]
+        if "email" in related_def:
+            related_patient_def["email"] = related_def["email"]
+
+        related_patient = self.resource_factory.create_patient(
+            related_patient_def,
+            patient_id=related_patient_id
+        )
+        resources.append(related_patient)
+
+        # Create RelatedPerson from related patient to main patient
+        related_person1_id = self.rng.uuid()
+        if request_method == "POST":
+            related_person1_urn = self.rng.uuid()
+            urn_mapping[related_person1_id] = related_person1_urn
+
+        # Map relationships to their inverses
+        inverse_relationship = {
+            "parent": "child",
+            "child": "parent",
+            "spouse": "spouse",
+            "sibling": "sibling",
+            "guardian": "child",
+            "emergency": "emergency"
+        }
+
+        original_relationship = related_def.get("relationship", "").lower()
+        inverse_rel = inverse_relationship.get(original_relationship, original_relationship)
+
+        # Create first RelatedPerson (related person -> main patient)
+        related_person1_def = {
+            "name": related_def.get("name", {}),
+            "relationship": related_def.get("relationship"),
+            "active": related_def.get("active", True),
+            "gender": related_def.get("gender"),
+            "birthDate": related_def.get("birthDate")
+        }
+
+        # Add identifier linking to the related patient
+        related_person1_def["identifiers"] = [{
+            "system": "http://example.org/fhir/related-person-patient",
+            "use": "official",
+            "value": related_patient_id
+        }]
+
+        related_person1 = self.resource_factory.create_related_person(
+            patient_id=patient.id,
+            patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
+            related_person_def=related_person1_def,
+            related_person_id=related_person1_id
+        )
+        resources.append(related_person1)
+
+        # Create second RelatedPerson (main patient -> related patient)
+        related_person2_id = self.rng.uuid()
+        if request_method == "POST":
+            related_person2_urn = self.rng.uuid()
+            urn_mapping[related_person2_id] = related_person2_urn
+
+        # Get main patient's name
+        patient_name = {}
+        if patient.name and len(patient.name) > 0:
+            patient_name = {
+                "family": patient.name[0].family,
+                "given": patient.name[0].given
+            }
+
+        related_person2_def = {
+            "name": patient_name,
+            "relationship": inverse_rel,
+            "active": True,
+            "gender": patient.gender,
+            "birthDate": patient.birthDate
+        }
+
+        # Add identifier linking to the main patient
+        related_person2_def["identifiers"] = [{
+            "system": "http://example.org/fhir/related-person-patient",
+            "use": "official",
+            "value": patient.id
+        }]
+
+        related_person2 = self.resource_factory.create_related_person(
+            patient_id=related_patient_id,
+            patient_ref=f"urn:uuid:{related_patient_urn}" if request_method == "POST" else f"Patient/{related_patient_id}",
+            related_person_def=related_person2_def,
+            related_person_id=related_person2_id
+        )
+        resources.append(related_person2)
+
+        return resources, urn_mapping
 
     def _filter_resources(self, resources: List[Any]) -> List[Any]:
         """Filter resources based on resource_filter.

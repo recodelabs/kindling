@@ -1,0 +1,45 @@
+version: "0.1"
+mode: single
+name: family_example
+description: "Example showing symmetrical RelatedPerson resources"
+
+single_patient:
+  name:
+    family: "Berg"
+    given: ["Matt"]
+  gender: male
+  birthDate: "1985-01-15"
+  phone: "+1-555-0101"
+  email: "matt.berg@example.com"
+
+resources:
+  rules:
+    - name: family_relationships
+      when:
+        condition: "true"
+      then:
+        related_persons:
+          - relationship: "child"
+            name:
+              family: "Berg"
+              given: ["Anouk"]
+            gender: female
+            birthDate: "2015-06-20"
+
+          - relationship: "child"
+            name:
+              family: "Berg"
+              given: ["Emma"]
+            gender: female
+            birthDate: "2018-03-15"
+
+          - relationship: "spouse"
+            name:
+              family: "Berg"
+              given: ["Sarah"]
+            gender: female
+            birthDate: "1987-08-22"
+
+output:
+  mode: transaction
+  bundle_size: 100

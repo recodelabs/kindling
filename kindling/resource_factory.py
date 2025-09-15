@@ -19,6 +19,7 @@ from fhir.resources.patient import Patient
 from fhir.resources.period import Period
 from fhir.resources.quantity import Quantity
 from fhir.resources.reference import Reference
+from fhir.resources.relatedperson import RelatedPerson
 
 from .config import SYSTEMS, DEFAULT_ADDRESS, DEFAULT_TELECOM, RESOURCE_DEFAULTS
 from .utils.random_utils import SeededRandom
@@ -391,3 +392,111 @@ class ResourceFactory:
         )
 
         return encounter
+
+    def create_related_person(
+        self,
+        patient_id: str,
+        related_person_def: Dict[str, Any],
+        patient_ref: Optional[str] = None,
+        related_person_id: Optional[str] = None
+    ) -> RelatedPerson:
+        """Create a RelatedPerson resource.
+
+        Args:
+            patient_id: Patient ID that this person is related to
+            related_person_def: RelatedPerson definition
+            patient_ref: Optional custom patient reference (defaults to Patient/{patient_id})
+            related_person_id: Optional RelatedPerson ID
+
+        Returns:
+            RelatedPerson resource
+        """
+        related_person_id = related_person_id or self.rng.uuid()
+
+        # Extract name
+        name_data = related_person_def.get("name", {})
+        name = HumanName(
+            family=name_data.get("family", "Doe"),
+            given=name_data.get("given", ["John"])
+        )
+
+        # Extract relationship
+        relationship_code = related_person_def.get("relationship")
+        if isinstance(relationship_code, str):
+            # Simple string relationship
+            relationship_mapping = {
+                "parent": ("PRN", "parent"),
+                "child": ("CHILD", "child"),
+                "spouse": ("SPS", "spouse"),
+                "sibling": ("SIB", "sibling"),
+                "guardian": ("GUARD", "guardian"),
+                "emergency": ("C", "emergency contact")
+            }
+            code, display = relationship_mapping.get(
+                relationship_code.lower(),
+                (relationship_code.upper(), relationship_code)
+            )
+            relationship_coding = Coding(
+                system="http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                code=code,
+                display=display
+            )
+        else:
+            # Full coding object
+            relationship_coding = Coding(
+                system=relationship_code.get("system", "http://terminology.hl7.org/CodeSystem/v3-RoleCode"),
+                code=relationship_code.get("code"),
+                display=relationship_code.get("display")
+            )
+
+        # Build identifiers if provided
+        identifiers = []
+        for ident_def in related_person_def.get("identifiers", []):
+            identifier = Identifier(
+                system=ident_def.get("system"),
+                value=ident_def.get("value"),
+                use=ident_def.get("use", "official")
+            )
+            identifiers.append(identifier)
+
+        # Build contact info
+        telecom = []
+        if phone := related_person_def.get("phone"):
+            telecom.append(
+                ContactPoint(
+                    system="phone",
+                    value=phone,
+                    use="home"
+                )
+            )
+        if email := related_person_def.get("email"):
+            telecom.append(
+                ContactPoint(
+                    system="email",
+                    value=email,
+                    use="home"
+                )
+            )
+
+        # Create RelatedPerson
+        kwargs = {
+            "id": related_person_id,
+            "active": related_person_def.get("active", True),
+            "patient": Reference(reference=patient_ref or f"Patient/{patient_id}"),
+            "relationship": [CodeableConcept(coding=[relationship_coding])],
+            "name": [name],
+        }
+
+        # Add optional fields
+        if identifiers:
+            kwargs["identifier"] = identifiers
+        if related_person_def.get("gender"):
+            kwargs["gender"] = related_person_def.get("gender")
+        if related_person_def.get("birthDate"):
+            kwargs["birthDate"] = related_person_def.get("birthDate")
+        if telecom:
+            kwargs["telecom"] = telecom
+
+        related_person = RelatedPerson(**kwargs)
+
+        return related_person
