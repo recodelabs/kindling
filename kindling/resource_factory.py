@@ -1,6 +1,6 @@
 """Factory for creating FHIR resources."""
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from fhir.resources.address import Address
@@ -99,16 +99,26 @@ class ResourceFactory:
             # Default address
             addresses = [
                 Address(
-                    line=["123 Main St"],
-                    city="Boston",
-                    state="MA",
-                    postalCode="02115",
-                    country="US"
+                    line=DEFAULT_ADDRESS["LINE"],
+                    city=DEFAULT_ADDRESS["CITY"],
+                    state=DEFAULT_ADDRESS["STATE"],
+                    postalCode=DEFAULT_ADDRESS["POSTAL_CODE"],
+                    country=DEFAULT_ADDRESS["COUNTRY"]
                 )
             ]
 
         # Build contact
-        telecom = []
+        telecom: List[ContactPoint] = []
+
+        for telecom_entry in patient_def.get("telecom", []):
+            telecom.append(
+                ContactPoint(
+                    system=telecom_entry.get("system"),
+                    value=telecom_entry.get("value"),
+                    use=telecom_entry.get("use")
+                )
+            )
+
         if phone := patient_def.get("phone"):
             telecom.append(
                 ContactPoint(
@@ -126,6 +136,16 @@ class ResourceFactory:
                 )
             )
 
+        if not telecom and DEFAULT_TELECOM:
+            for telecom_entry in DEFAULT_TELECOM:
+                telecom.append(
+                    ContactPoint(
+                        system=telecom_entry.get("system"),
+                        value=telecom_entry.get("value"),
+                        use=telecom_entry.get("use")
+                    )
+                )
+
         # Create patient
         patient = Patient(
             id=patient_id,
@@ -136,6 +156,9 @@ class ResourceFactory:
             address=addresses,
             telecom=telecom if telecom else None
         )
+
+        if isinstance(patient.birthDate, date):
+            patient.__dict__["birthDate"] = patient.birthDate.isoformat()
 
         return patient
 
@@ -228,18 +251,21 @@ class ResourceFactory:
             display=observation_def.get("display", "")
         )
 
-        # Generate value within range
-        value_range = observation_def.get("range", {})
-        min_val = value_range.get("min", 0)
-        max_val = value_range.get("max", 100)
-        value = self.rng.uniform(min_val, max_val)
+        # Determine the observation value
+        if "value" in observation_def:
+            value = observation_def.get("value")
+        else:
+            value_range = observation_def.get("range", {})
+            min_val = value_range.get("min", 0)
+            max_val = value_range.get("max", 100)
+            value = round(self.rng.uniform(min_val, max_val), 2)
 
         # Create quantity
         unit = observation_def.get("unit", "1")
         if not unit:
             unit = "1"  # Default unit if empty
         quantity = Quantity(
-            value=round(value, 2),
+            value=value,
             unit=unit,
             system="http://unitsofmeasure.org",
             code=unit
@@ -344,12 +370,28 @@ class ResourceFactory:
         encounter_id = encounter_id or self.rng.uuid()
 
         # Encounter class - needs to be a CodeableConcept
+        class_data = encounter_def.get("class")
+        if isinstance(class_data, dict):
+            class_code = class_data.get("code", RESOURCE_DEFAULTS["ENCOUNTER_CLASS_DEFAULT"])
+            class_system = class_data.get("system", SYSTEMS["HL7_V3_ACTCODE"])
+            class_display = class_data.get("display")
+        elif class_data:
+            class_code = class_data
+            class_system = encounter_def.get("class_system", SYSTEMS["HL7_V3_ACTCODE"])
+            class_display = encounter_def.get("class_display", "ambulatory")
+        else:
+            class_code = RESOURCE_DEFAULTS["ENCOUNTER_CLASS_DEFAULT"]
+            class_system = SYSTEMS["HL7_V3_ACTCODE"]
+            class_display = "ambulatory"
+
         encounter_class = CodeableConcept(
-            coding=[Coding(
-                system="http://terminology.hl7.org/CodeSystem/v3-ActCode",
-                code=encounter_def.get("class", "AMB"),
-                display=encounter_def.get("class_display", "ambulatory")
-            )]
+            coding=[
+                Coding(
+                    system=class_system,
+                    code=class_code,
+                    display=class_display,
+                )
+            ]
         )
 
         # Encounter type
@@ -379,7 +421,11 @@ class ResourceFactory:
         # Period
         days_ago = encounter_def.get("days_ago", self.rng.randint(1, 90))
         start_time = datetime.now() - timedelta(days=days_ago)
-        end_time = start_time + timedelta(hours=1)
+        duration_hours = encounter_def.get(
+            "duration_hours",
+            encounter_def.get("durationHours", RESOURCE_DEFAULTS["ENCOUNTER_DURATION_HOURS_DEFAULT"]),
+        )
+        end_time = start_time + timedelta(hours=duration_hours)
 
         period = Period(
             start=start_time.strftime("%Y-%m-%dT%H:%M:%S+00:00"),

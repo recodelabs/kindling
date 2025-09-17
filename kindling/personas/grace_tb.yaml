@@ -255,6 +255,21 @@ resources:
             qty: 1
             days_ago: 550  # Third dose 2023
 
+        coverage:
+          - status: "active"
+            type:
+              system: "http://terminology.hl7.org/CodeSystem/v3-ActCode"
+              code: "EHCPOL"
+              display: "Extended healthcare"
+            identifier:
+              system: "http://nhif.or.ke/policy"
+              value: "NHIF-GRACE-001"
+            payor: "Organization/nhif-kenya"
+            relationship: "self"
+            period:
+              start_days_ago: 365
+              end_days_ago: 0
+
         diagnostic_reports:
           # Initial TB diagnosis workup
           - code:

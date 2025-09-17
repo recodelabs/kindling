@@ -29,19 +29,33 @@ class BundleAssembler:
         Returns:
             FHIR Bundle
         """
+        valid_bundle_types = {"transaction", "collection"}
+        if bundle_type not in valid_bundle_types:
+            raise ValueError(f"Invalid bundle type: {bundle_type}")
+
+        if bundle_type == "transaction":
+            valid_methods = {"POST", "PUT", "CONDITIONAL"}
+            if request_method not in valid_methods:
+                raise ValueError(f"Invalid request method: {request_method}")
+
         bundle_id = str(uuid.uuid4())
-        entries = []
+        entries: List[BundleEntry] = []
+
+        combined_mapping: Dict[str, str] = dict(urn_mapping or {})
 
         for resource in resources:
-            entry = self._create_bundle_entry(resource, bundle_type, request_method, urn_mapping)
+            entry = self._create_bundle_entry(resource, bundle_type, request_method, combined_mapping)
             entries.append(entry)
 
         bundle = Bundle(
             id=bundle_id,
             type=bundle_type,
             timestamp=datetime.now().strftime("%Y-%m-%dT%H:%M:%S+00:00"),
-            entry=entries if entries else None
+            entry=entries
         )
+
+        if isinstance(bundle.timestamp, datetime):
+            bundle.__dict__["timestamp"] = bundle.timestamp.isoformat()
 
         return bundle
 
@@ -98,6 +112,8 @@ class BundleAssembler:
             BundleEntry
         """
         # For POST method, use URN UUID and remove resource.id
+        original_id = getattr(resource, "id", None)
+
         if request_method == "POST":
             if urn_mapping and resource.id in urn_mapping:
                 # Get the URN UUID for this resource
@@ -106,10 +122,15 @@ class BundleAssembler:
                 # Generate a new URN UUID if not in mapping
                 urn_uuid = str(uuid.uuid4())
 
+            if original_id and urn_uuid:
+                urn_mapping[original_id] = urn_uuid
+
             # Create a copy of the resource without the id field
-            resource_dict = resource.dict()
+            resource_dict = resource.model_dump(mode="python")
             # Remove the id field
             resource_dict.pop('id', None)
+            if urn_mapping:
+                self._update_references(resource_dict, urn_mapping)
             resource_class = resource.__class__
             resource_without_id = resource_class(**resource_dict)
 
@@ -126,7 +147,7 @@ class BundleAssembler:
 
         # Add request for transaction bundles
         if bundle_type == "transaction":
-            resource_type = resource.__class__.__name__
+            resource_type = resource.resource_type
             if request_method == "PUT":
                 # PUT with conditional update (upsert)
                 # ifNoneMatch: * means create if doesn't exist
@@ -144,12 +165,18 @@ class BundleAssembler:
                     ident = resource.identifier[0]
                     identifier_value = f"{ident.system}|{ident.value}"
 
-                if identifier_value and resource_type == "Patient":
-                    entry.request = BundleEntryRequest(
-                        method="POST",
-                        url=resource_type,
-                        ifNoneExist=f"identifier={identifier_value}"
-                    )
+                if resource_type == "Patient":
+                    search_identifier = identifier_value or original_id
+                    if search_identifier:
+                        entry.request = BundleEntryRequest(
+                            method="POST",
+                            url=f"{resource_type}?identifier={search_identifier}"
+                        )
+                    else:
+                        entry.request = BundleEntryRequest(
+                            method="POST",
+                            url=resource_type
+                        )
                 else:
                     # Regular POST for resources without identifiers
                     entry.request = BundleEntryRequest(
@@ -175,3 +202,22 @@ class BundleAssembler:
                     )
 
         return entry
+
+    def _update_references(self, data: Any, urn_mapping: Dict[str, str]) -> None:
+        """Recursively replace relative references with URN identifiers."""
+
+        if isinstance(data, dict):
+            reference = data.get("reference")
+            if isinstance(reference, str) and not reference.startswith("urn:uuid:"):
+                parts = reference.split("/")
+                if len(parts) == 2:
+                    ref_id = parts[1]
+                    if ref_id in urn_mapping:
+                        data["reference"] = f"urn:uuid:{urn_mapping[ref_id]}"
+
+            for value in data.values():
+                self._update_references(value, urn_mapping)
+
+        elif isinstance(data, list):
+            for item in data:
+                self._update_references(item, urn_mapping)
