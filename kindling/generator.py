@@ -1,5 +1,6 @@
 """Core Generator class for Kindling."""
 
+from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, Tuple
@@ -524,12 +525,14 @@ class Generator:
             "birthDate": related_def.get("birthDate")
         }
 
-        # Add identifier linking to the related patient
-        related_person1_def["identifiers"] = [{
+        # Preserve any user-specified identifiers while adding the linking identifier
+        identifiers = deepcopy(related_def.get("identifiers") or [])
+        identifiers.append({
             "system": "http://example.org/fhir/related-person-patient",
             "use": "official",
             "value": related_patient_id
-        }]
+        })
+        related_person1_def["identifiers"] = identifiers
 
         related_person1 = self.resource_factory.create_related_person(
             patient_id=patient.id,
