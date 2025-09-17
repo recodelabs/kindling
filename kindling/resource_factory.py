@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from fhir.resources.address import Address
+from fhir.resources.annotation import Annotation
 from fhir.resources.codeableconcept import CodeableConcept
 from fhir.resources.codeablereference import CodeableReference
 from fhir.resources.coding import Coding
@@ -14,6 +15,7 @@ from fhir.resources.humanname import HumanName
 from fhir.resources.identifier import Identifier
 from fhir.resources.medicationrequest import MedicationRequest
 from fhir.resources.dosage import Dosage
+from fhir.resources.duration import Duration
 from fhir.resources.observation import Observation
 from fhir.resources.patient import Patient
 from fhir.resources.period import Period
@@ -38,6 +40,12 @@ class ResourceFactory:
             rng: Seeded random generator
         """
         self.rng = rng or SeededRandom()
+
+    @staticmethod
+    def _format_datetime(value: datetime) -> str:
+        """Return an ISO 8601 timestamp in UTC format expected by FHIR."""
+
+        return value.replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%S+00:00")
 
     def create_patient(
         self,
@@ -228,7 +236,8 @@ class ResourceFactory:
         patient_id: str,
         observation_def: Dict[str, Any],
         patient_ref: Optional[str] = None,
-        observation_id: Optional[str] = None
+        observation_id: Optional[str] = None,
+        effective_datetime: Optional[datetime] = None,
     ) -> Observation:
         """Create an Observation resource.
 
@@ -237,6 +246,7 @@ class ResourceFactory:
             observation_def: Observation definition
             patient_ref: Optional custom patient reference (defaults to Patient/{patient_id})
             observation_id: Optional observation ID
+            effective_datetime: Optional timestamp to use for effectiveDateTime
 
         Returns:
             Observation resource
@@ -251,8 +261,10 @@ class ResourceFactory:
             display=observation_def.get("display", "")
         )
 
-        # Determine the observation value
-        if "value" in observation_def:
+        value_type = observation_def.get("value_type") or observation_def.get("valueType")
+        value_type = (value_type or "quantity").lower()
+
+        if "value" in observation_def and value_type == "quantity":
             value = observation_def.get("value")
         else:
             value_range = observation_def.get("range", {})
@@ -260,30 +272,60 @@ class ResourceFactory:
             max_val = value_range.get("max", 100)
             value = round(self.rng.uniform(min_val, max_val), 2)
 
-        # Create quantity
-        unit = observation_def.get("unit", "1")
-        if not unit:
-            unit = "1"  # Default unit if empty
-        quantity = Quantity(
-            value=value,
-            unit=unit,
-            system="http://unitsofmeasure.org",
-            code=unit
-        )
+        unit = observation_def.get("unit", "1") or "1"
+        quantity_def = observation_def.get("valueQuantity")
+        if quantity_def:
+            quantity = Quantity(
+                value=quantity_def.get("value", value),
+                unit=quantity_def.get("unit", unit),
+                system=quantity_def.get("system", "http://unitsofmeasure.org"),
+                code=quantity_def.get("code", quantity_def.get("unit", unit)),
+            )
+        else:
+            quantity = Quantity(
+                value=value,
+                unit=unit,
+                system="http://unitsofmeasure.org",
+                code=unit,
+            )
 
-        # Generate effective date (recent)
-        days_ago = self.rng.randint(1, 30)
-        effective_date = datetime.now() - timedelta(days=days_ago)
+        observation_kwargs: Dict[str, Any] = {
+            "id": observation_id,
+            "status": observation_def.get("status", RESOURCE_DEFAULTS["OBSERVATION_STATUS"]),
+            "code": CodeableConcept(coding=[coding]),
+            "subject": Reference(reference=patient_ref or f"Patient/{patient_id}"),
+        }
 
-        # Create observation
-        observation = Observation(
-            id=observation_id,
-            status=RESOURCE_DEFAULTS["OBSERVATION_STATUS"],
-            code=CodeableConcept(coding=[coding]),
-            subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
-            effectiveDateTime=effective_date.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
-            valueQuantity=quantity
-        )
+        event_time = effective_datetime or (datetime.now() - timedelta(days=self.rng.randint(1, 30)))
+        observation_kwargs["effectiveDateTime"] = self._format_datetime(event_time)
+
+        if value_type in {"boolean", "flag"}:
+            observation_kwargs["valueBoolean"] = bool(observation_def.get("positive", True))
+        elif value_type in {"string", "text"}:
+            observation_kwargs["valueString"] = observation_def.get("value", observation_def.get("display", ""))
+        elif value_type in {"integer", "int"}:
+            observation_kwargs["valueInteger"] = int(observation_def.get("value", value))
+        elif value_type in {"codeableconcept", "coded", "code"}:
+            coded_value = observation_def.get("value", {})
+            if isinstance(coded_value, dict):
+                observation_kwargs["valueCodeableConcept"] = CodeableConcept(
+                    coding=[
+                        Coding(
+                            system=coded_value.get("system", SYSTEMS["LOINC"]),
+                            code=coded_value.get("code", coded_value.get("value")),
+                            display=coded_value.get("display"),
+                        )
+                    ]
+                )
+            else:
+                observation_kwargs["valueString"] = str(coded_value)
+        else:
+            observation_kwargs["valueQuantity"] = quantity
+
+        if reference_range := observation_def.get("reference_range"):
+            observation_kwargs["referenceRange"] = [reference_range]
+
+        observation = Observation(**observation_kwargs)
 
         return observation
 
@@ -315,37 +357,108 @@ class ResourceFactory:
             display=medication_def.get("display", "")
         )
 
-        # Create dosage instruction
         frequency = medication_def.get("frequency", 1)
-        # Ensure frequency is an integer
-        if frequency < 1:
-            frequency = 1  # PRN medications
+        frequency = 1 if frequency < 1 else int(frequency)
+
+        now = datetime.now()
+        status = medication_def.get("status", RESOURCE_DEFAULTS["MEDICATION_REQUEST_STATUS"])
+        if medication_def.get("completed_days_ago") is not None and "status" not in medication_def:
+            status = "completed"
+
+        duration_days = medication_def.get("duration_days") or medication_def.get("durationDays")
+        completed_days_ago = medication_def.get("completed_days_ago") or medication_def.get("completedDaysAgo")
+        start_days_ago = medication_def.get("start_days_ago") or medication_def.get("startDaysAgo")
+
+        if start_days_ago is not None:
+            start_date = now - timedelta(days=int(start_days_ago))
+        elif completed_days_ago is not None and duration_days is not None:
+            start_date = now - timedelta(days=int(completed_days_ago) + int(duration_days))
         else:
-            frequency = int(frequency)
+            start_date = now
+
+        if completed_days_ago is not None:
+            end_date = now - timedelta(days=int(completed_days_ago))
+        elif duration_days is not None:
+            end_date = start_date + timedelta(days=int(duration_days))
+        else:
+            end_date = None
+
+        bounds_period: Dict[str, Any] = {}
+        bounds_period["start"] = self._format_datetime(start_date)
+        if end_date:
+            bounds_period["end"] = self._format_datetime(end_date)
+
+        timing_repeat: Dict[str, Any] = {
+            "frequency": frequency,
+            "period": 1,
+            "periodUnit": "d",
+        }
+        if bounds_period:
+            timing_repeat["boundsPeriod"] = bounds_period
 
         dosage = Dosage(
             text=medication_def.get("sig", "Take as directed"),
-            timing={
-                "repeat": {
-                    "frequency": frequency,
-                    "period": 1,
-                    "periodUnit": "d"
-                }
-            }
+            timing={"repeat": timing_repeat},
+            patientInstruction=medication_def.get("instructions"),
         )
 
-        # Create medication request
-        med_request = MedicationRequest(
-            id=med_request_id,
-            status=RESOURCE_DEFAULTS["MEDICATION_REQUEST_STATUS"],
-            intent=RESOURCE_DEFAULTS["MEDICATION_REQUEST_INTENT"],
-            medication=CodeableReference(
-                concept=CodeableConcept(coding=[coding])
-            ),
-            subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
-            authoredOn=datetime.now().strftime("%Y-%m-%dT%H:%M:%S+00:00"),
-            dosageInstruction=[dosage]
-        )
+        medication_kwargs: Dict[str, Any] = {
+            "id": med_request_id,
+            "status": status,
+            "intent": medication_def.get("intent", RESOURCE_DEFAULTS["MEDICATION_REQUEST_INTENT"]),
+            "medication": CodeableReference(concept=CodeableConcept(coding=[coding])),
+            "subject": Reference(reference=patient_ref or f"Patient/{patient_id}"),
+            "authoredOn": self._format_datetime(start_date),
+            "dosageInstruction": [dosage],
+        }
+
+        if priority := medication_def.get("priority"):
+            medication_kwargs["priority"] = priority
+
+        if reason_code := medication_def.get("reason"):
+            if isinstance(reason_code, dict):
+                medication_kwargs["reasonCode"] = [
+                    CodeableConcept(
+                        coding=[
+                            Coding(
+                                system=reason_code.get("system", SYSTEMS["SNOMED"]),
+                                code=reason_code.get("code"),
+                                display=reason_code.get("display"),
+                            )
+                        ]
+                    )
+                ]
+            else:
+                medication_kwargs["reasonCode"] = [CodeableConcept(text=str(reason_code))]
+
+        notes: List[Annotation] = []
+        if adherence := medication_def.get("adherence"):
+            adherence_prob = adherence.get("prob")
+            if adherence_prob is not None:
+                notes.append(Annotation(text=f"Estimated adherence probability: {adherence_prob}"))
+        if medication_def.get("notes"):
+            note_text = medication_def.get("notes")
+            if isinstance(note_text, list):
+                notes.extend(Annotation(text=str(text)) for text in note_text)
+            else:
+                notes.append(Annotation(text=str(note_text)))
+        if notes:
+            medication_kwargs["note"] = notes
+
+        dispense_request: Dict[str, Any] = {}
+        if bounds_period:
+            dispense_request["validityPeriod"] = bounds_period
+        if duration_days is not None:
+            dispense_request["expectedSupplyDuration"] = Duration(
+                value=int(duration_days),
+                unit="day",
+                system="http://unitsofmeasure.org",
+                code="d",
+            )
+        if dispense_request:
+            medication_kwargs["dispenseRequest"] = dispense_request
+
+        med_request = MedicationRequest(**medication_kwargs)
 
         return med_request
 

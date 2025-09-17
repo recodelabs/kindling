@@ -313,18 +313,23 @@ class Generator:
 
         # Add observations
         for obs_def in then.get("add_observations", []):
-            obs_id = self.rng.uuid()
-            if request_method == "POST":
-                obs_urn = self.rng.uuid()
-                urn_mapping[obs_id] = obs_urn
+            times = obs_def.get("times") or {}
+            occurrences = self._generate_time_points(times)
 
-            observation = self.resource_factory.create_observation(
-                patient_id=patient.id,
-                patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
-                observation_def=obs_def,
-                observation_id=obs_id
-            )
-            resources.append(observation)
+            for when in occurrences:
+                obs_id = self.rng.uuid()
+                if request_method == "POST":
+                    obs_urn = self.rng.uuid()
+                    urn_mapping[obs_id] = obs_urn
+
+                observation = self.resource_factory.create_observation(
+                    patient_id=patient.id,
+                    patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
+                    observation_def=obs_def,
+                    observation_id=obs_id,
+                    effective_datetime=when,
+                )
+                resources.append(observation)
 
         # Add medications
         for med_def in then.get("meds", []):
@@ -602,22 +607,27 @@ class Generator:
 
         # Create observations for the report if defined
         for obs_def in report_def.get("observations", []):
-            obs_id = self.rng.uuid()
-            if request_method == "POST":
-                obs_urn = self.rng.uuid()
-                urn_mapping[obs_id] = obs_urn
-                obs_ref = f"urn:uuid:{obs_urn}"
-            else:
-                obs_ref = f"Observation/{obs_id}"
+            times = obs_def.get("times") or {}
+            occurrences = self._generate_time_points(times)
 
-            observation = self.resource_factory.create_observation(
-                patient_id=patient.id,
-                patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
-                observation_def=obs_def,
-                observation_id=obs_id
-            )
-            resources.append(observation)
-            observation_refs.append(obs_ref)
+            for when in occurrences:
+                obs_id = self.rng.uuid()
+                if request_method == "POST":
+                    obs_urn = self.rng.uuid()
+                    urn_mapping[obs_id] = obs_urn
+                    obs_ref = f"urn:uuid:{obs_urn}"
+                else:
+                    obs_ref = f"Observation/{obs_id}"
+
+                observation = self.resource_factory.create_observation(
+                    patient_id=patient.id,
+                    patient_ref=f"urn:uuid:{patient_ref}" if request_method == "POST" else f"Patient/{patient_ref}",
+                    observation_def=obs_def,
+                    observation_id=obs_id,
+                    effective_datetime=when,
+                )
+                resources.append(observation)
+                observation_refs.append(obs_ref)
 
         # Create the diagnostic report
         report_id = self.rng.uuid()
@@ -635,6 +645,40 @@ class Generator:
         resources.append(diagnostic_report)
 
         return resources, urn_mapping
+
+    def _generate_time_points(self, times: Dict[str, Any]) -> List[datetime]:
+        """Generate timestamps for repeated resource creation."""
+
+        qty = max(int(times.get("qty", 1)) if times else 1, 1)
+        now = datetime.now()
+
+        if not times:
+            return [now - timedelta(days=self.rng.randint(1, 30)) for _ in range(qty)]
+
+        if "days_ago" in times:
+            base = int(times["days_ago"])
+            if qty == 1:
+                offsets = [base]
+            else:
+                spacing = int(times.get("spacing_days", max(base // max(qty - 1, 1), 1)))
+                offsets = [base + i * spacing for i in range(qty)]
+            return [now - timedelta(days=offset) for offset in offsets]
+
+        if "lookback_months" in times:
+            total_days = int(times["lookback_months"] * 30)
+            if qty == 1:
+                offsets = [self.rng.randint(0, max(total_days, 1))]
+            else:
+                step = total_days / max(qty - 1, 1)
+                offsets = [int(round(i * step)) for i in range(qty)]
+            return [now - timedelta(days=offset) for offset in offsets]
+
+        if "lookback_days" in times:
+            total_days = int(times["lookback_days"])
+            offsets = sorted(self.rng.randint(0, max(total_days, 1)) for _ in range(qty))
+            return [now - timedelta(days=offset) for offset in offsets]
+
+        return [now - timedelta(days=self.rng.randint(1, 30)) for _ in range(qty)]
 
     def _filter_resources(self, resources: List[Any]) -> List[Any]:
         """Filter resources based on resource_filter.

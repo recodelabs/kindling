@@ -1,8 +1,9 @@
 """Tests for the Generator class."""
 
+from datetime import datetime, timedelta
+
 import pytest
 from kindling import Generator
-from kindling.persona_loader import PersonaLoader
 
 
 def test_generator_from_persona():
@@ -101,3 +102,60 @@ def test_cohort_generation():
     bundles = gen.generate(count=5)
 
     assert bundles is not None
+
+
+def test_observation_times_schedule():
+    """Rules with times should create multiple observations."""
+
+    profile = {
+        "version": "0.1",
+        "mode": "single",
+        "single_patient": {
+            "name": {"family": "Schedule", "given": ["Tester"]},
+            "gender": "female",
+            "birthDate": "1985-05-05",
+        },
+        "resources": {
+            "include": ["Patient", "Observation"],
+            "rules": [
+                {
+                    "name": "scheduled_observations",
+                    "when": {"condition": "true"},
+                    "then": {
+                        "add_observations": [
+                            {
+                                "loinc": "618-9",
+                                "display": "Mycobacterium culture",
+                                "value_type": "boolean",
+                                "positive": True,
+                                "times": {"qty": 3, "lookback_months": 3},
+                            }
+                        ]
+                    },
+                }
+            ],
+        },
+    }
+
+    gen = Generator(profile=profile, seed=17)
+    bundle = gen.generate()
+
+    observations = [
+        entry.resource
+        for entry in bundle.entry
+        if entry.resource.resource_type == "Observation"
+    ]
+
+    assert len(observations) == 3
+    assert all(getattr(obs, "valueBoolean", False) is True for obs in observations)
+
+    parsed_dates = []
+    for obs in observations:
+        value = obs.effectiveDateTime
+        if isinstance(value, str):
+            parsed_dates.append(datetime.fromisoformat(value.replace("Z", "+00:00")))
+        else:
+            parsed_dates.append(value)
+
+    span = max(parsed_dates) - min(parsed_dates)
+    assert span <= timedelta(days=95)

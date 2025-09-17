@@ -191,6 +191,31 @@ class TestResourceFactory:
         assert observation.valueQuantity.value == 120
         assert observation.valueQuantity.unit == "mg/dL"
 
+    def test_create_observation_boolean(self):
+        """Boolean observations should populate valueBoolean."""
+
+        obs_def = {
+            "loinc": "618-9",
+            "display": "Mycobacterium tuberculosis culture",
+            "value_type": "boolean",
+            "positive": True,
+        }
+
+        event_time = datetime.now() - timedelta(days=5)
+        observation = self.factory.create_observation(
+            patient_id="patient-123",
+            observation_def=obs_def,
+            observation_id="obs-boolean",
+            effective_datetime=event_time,
+        )
+
+        assert observation.valueBoolean is True
+        expected = self.factory._format_datetime(event_time)
+        effective_value = observation.effectiveDateTime
+        observed = effective_value.isoformat() if hasattr(effective_value, "isoformat") else effective_value
+        assert observed == expected
+        assert not hasattr(observation, "valueQuantity") or observation.valueQuantity is None
+
     def test_create_medication_request(self):
         """Test creating a medication request."""
         med_def = {
@@ -231,6 +256,38 @@ class TestResourceFactory:
 
         # Frequency should be normalized to 1 for PRN
         assert med_request.dosageInstruction[0].timing["repeat"]["frequency"] == 1
+
+    def test_create_medication_request_with_duration(self):
+        """Medication requests honor duration and completion fields."""
+
+        med_def = {
+            "rxnorm": "198332",
+            "display": "pyridoxine 25 MG Oral Tablet",
+            "sig": "Take 1 tablet daily",
+            "frequency": 1,
+            "status": "completed",
+            "duration_days": 30,
+            "completed_days_ago": 5,
+            "adherence": {"prob": 0.9},
+        }
+
+        med_request = self.factory.create_medication_request(
+            patient_id="patient-123",
+            medication_def=med_def,
+            medication_id="med-completed",
+        )
+
+        assert med_request.status == "completed"
+        assert med_request.id == "med-completed"
+        assert med_request.dispenseRequest.validityPeriod.end is not None
+        assert med_request.note[0].text.startswith("Estimated adherence probability")
+        bounds_end = med_request.dosageInstruction[0].timing["repeat"]["boundsPeriod"]["end"]
+        validity_end = med_request.dispenseRequest.validityPeriod.end
+        if hasattr(bounds_end, "isoformat"):
+            bounds_end = bounds_end.isoformat()
+        if hasattr(validity_end, "isoformat"):
+            validity_end = validity_end.isoformat()
+        assert bounds_end == validity_end
 
     def test_create_encounter(self):
         """Test creating an encounter resource."""
