@@ -216,6 +216,69 @@ class TestSymmetricalRelatedPersons:
         assert len(parent_relation.identifier) > 0
         assert parent_relation.identifier[0].value == main_patient.id
 
+    def test_symmetrical_related_persons_preserve_identifiers(self):
+        """Ensure custom identifiers are preserved when creating symmetrical RelatedPersons."""
+        profile = {
+            "version": "0.1",
+            "mode": "single",
+            "single_patient": {
+                "name": {
+                    "family": "Doe",
+                    "given": ["Alex"]
+                },
+                "gender": "male",
+                "birthDate": "1980-04-01"
+            },
+            "resources": {
+                "rules": [
+                    {
+                        "when": {"condition": "true"},
+                        "then": {
+                            "related_persons": [
+                                {
+                                    "name": {
+                                        "family": "Doe",
+                                        "given": ["Jamie"]
+                                    },
+                                    "relationship": "child",
+                                    "gender": "female",
+                                    "birthDate": "2010-07-15",
+                                    "identifiers": [
+                                        {
+                                            "system": "http://example.org/mrn",
+                                            "value": "CHILD-123"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+
+        generator = Generator(profile=profile, seed=123)
+        bundle = generator.generate(request_method="PUT")
+
+        resources = [entry.resource for entry in bundle.entry]
+        patients = [r for r in resources if r.resource_type == "Patient"]
+        related_persons = [r for r in resources if r.resource_type == "RelatedPerson"]
+
+        assert len(patients) == 2
+        assert len(related_persons) == 2
+
+        main_patient = [p for p in patients if p.name[0].given == ["Alex"]][0]
+        child_patient = [p for p in patients if p.name[0].given == ["Jamie"]][0]
+
+        child_relation = [
+            rp for rp in related_persons
+            if rp.patient.reference == f"Patient/{main_patient.id}"
+        ][0]
+
+        identifier_values = {ident.value for ident in child_relation.identifier}
+        assert "CHILD-123" in identifier_values
+        assert child_patient.id in identifier_values
+
     def test_multiple_related_persons(self):
         """Test creating multiple related persons."""
         profile = {
