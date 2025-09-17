@@ -85,46 +85,67 @@ class ResourceFactory:
             )
 
         # Build address
-        address_def = patient_def.get("address", {})
+        address_def = patient_def.get("address")
         if address_def:
             address = Address(
                 line=address_def.get("line"),
                 city=address_def.get("city"),
                 state=address_def.get("state"),
                 postalCode=address_def.get("postalCode"),
-                country=address_def.get("country", "US")
+                country=address_def.get("country", DEFAULT_ADDRESS["COUNTRY"]),
             )
             addresses = [address]
         else:
-            # Default address
             addresses = [
                 Address(
-                    line=["123 Main St"],
-                    city="Boston",
-                    state="MA",
-                    postalCode="02115",
-                    country="US"
+                    line=DEFAULT_ADDRESS["LINE"],
+                    city=DEFAULT_ADDRESS["CITY"],
+                    state=DEFAULT_ADDRESS["STATE"],
+                    postalCode=DEFAULT_ADDRESS["POSTAL_CODE"],
+                    country=DEFAULT_ADDRESS["COUNTRY"],
                 )
             ]
 
         # Build contact
-        telecom = []
-        if phone := patient_def.get("phone"):
-            telecom.append(
-                ContactPoint(
-                    system="phone",
-                    value=phone,
-                    use="home"
+        telecom_entries = patient_def.get("telecom")
+        telecom: List[ContactPoint] = []
+
+        if telecom_entries:
+            for telecom_def in telecom_entries:
+                telecom.append(
+                    ContactPoint(
+                        system=telecom_def.get("system", "phone"),
+                        value=telecom_def.get("value"),
+                        use=telecom_def.get("use", "home"),
+                    )
                 )
-            )
-        if email := patient_def.get("email"):
-            telecom.append(
-                ContactPoint(
-                    system="email",
-                    value=email,
-                    use="home"
+        else:
+            if phone := patient_def.get("phone"):
+                telecom.append(
+                    ContactPoint(
+                        system="phone",
+                        value=phone,
+                        use="home",
+                    )
                 )
-            )
+            if email := patient_def.get("email"):
+                telecom.append(
+                    ContactPoint(
+                        system="email",
+                        value=email,
+                        use="home",
+                    )
+                )
+
+        if not telecom:
+            for default_contact in DEFAULT_TELECOM:
+                telecom.append(
+                    ContactPoint(
+                        system=default_contact.get("system"),
+                        value=default_contact.get("value"),
+                        use=default_contact.get("use", "home"),
+                    )
+                )
 
         # Create patient
         patient = Patient(
@@ -228,18 +249,21 @@ class ResourceFactory:
             display=observation_def.get("display", "")
         )
 
-        # Generate value within range
-        value_range = observation_def.get("range", {})
-        min_val = value_range.get("min", 0)
-        max_val = value_range.get("max", 100)
-        value = self.rng.uniform(min_val, max_val)
+        # Generate value within range or use provided value
+        if "value" in observation_def:
+            value = observation_def["value"]
+        else:
+            value_range = observation_def.get("range", {})
+            min_val = value_range.get("min", 0)
+            max_val = value_range.get("max", 100)
+            value = round(self.rng.uniform(min_val, max_val), 2)
 
         # Create quantity
         unit = observation_def.get("unit", "1")
         if not unit:
             unit = "1"  # Default unit if empty
         quantity = Quantity(
-            value=round(value, 2),
+            value=value,
             unit=unit,
             system="http://unitsofmeasure.org",
             code=unit
@@ -343,43 +367,80 @@ class ResourceFactory:
         """
         encounter_id = encounter_id or self.rng.uuid()
 
-        # Encounter class - needs to be a CodeableConcept
+        # Encounter class - needs to be a CodeableConcept (list in R5)
+        class_config = encounter_def.get("class")
+        if isinstance(class_config, dict):
+            class_system = class_config.get("system", SYSTEMS["HL7_V3_ACTCODE"])
+            class_code = class_config.get("code", RESOURCE_DEFAULTS["ENCOUNTER_CLASS_DEFAULT"])
+            class_display = class_config.get("display", encounter_def.get("class_display", "ambulatory"))
+        elif isinstance(class_config, str):
+            class_system = SYSTEMS["HL7_V3_ACTCODE"]
+            class_code = class_config
+            class_display = encounter_def.get("class_display", "ambulatory")
+        else:
+            class_system = SYSTEMS["HL7_V3_ACTCODE"]
+            class_code = RESOURCE_DEFAULTS["ENCOUNTER_CLASS_DEFAULT"]
+            class_display = encounter_def.get("class_display", "ambulatory")
+
         encounter_class = CodeableConcept(
-            coding=[Coding(
-                system="http://terminology.hl7.org/CodeSystem/v3-ActCode",
-                code=encounter_def.get("class", "AMB"),
-                display=encounter_def.get("class_display", "ambulatory")
-            )]
+            coding=[
+                Coding(
+                    system=class_system,
+                    code=class_code,
+                    display=class_display,
+                )
+            ]
         )
 
         # Encounter type
         type_code = encounter_def.get("type", {})
         if type_code:
-            encounter_type = CodeableConcept(
-                coding=[
-                    Coding(
-                        system=type_code.get("system", "http://snomed.info/sct"),
-                        code=type_code.get("code"),
-                        display=type_code.get("display")
+            if isinstance(type_code, list):
+                encounter_type = [
+                    CodeableConcept(
+                        coding=[
+                            Coding(
+                                system=item.get("system", SYSTEMS["SNOMED"]),
+                                code=item.get("code"),
+                                display=item.get("display"),
+                            )
+                        ]
+                    )
+                    for item in type_code
+                ]
+            else:
+                encounter_type = [
+                    CodeableConcept(
+                        coding=[
+                            Coding(
+                                system=type_code.get("system", SYSTEMS["SNOMED"]),
+                                code=type_code.get("code"),
+                                display=type_code.get("display"),
+                            )
+                        ]
                     )
                 ]
-            )
         else:
             # Default to general examination
-            encounter_type = CodeableConcept(
-                coding=[
-                    Coding(
-                        system="http://snomed.info/sct",
-                        code="162673000",
-                        display="General examination"
-                    )
-                ]
-            )
+            encounter_type = [
+                CodeableConcept(
+                    coding=[
+                        Coding(
+                            system=SYSTEMS["SNOMED"],
+                            code="162673000",
+                            display="General examination",
+                        )
+                    ]
+                )
+            ]
 
         # Period
         days_ago = encounter_def.get("days_ago", self.rng.randint(1, 90))
         start_time = datetime.now() - timedelta(days=days_ago)
-        end_time = start_time + timedelta(hours=1)
+        duration_hours = encounter_def.get(
+            "duration_hours", RESOURCE_DEFAULTS["ENCOUNTER_DURATION_HOURS_DEFAULT"]
+        )
+        end_time = start_time + timedelta(hours=duration_hours)
 
         period = Period(
             start=start_time.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
@@ -391,7 +452,7 @@ class ResourceFactory:
             "id": encounter_id,
             "status": encounter_def.get("status", RESOURCE_DEFAULTS["ENCOUNTER_STATUS"]),
             "class_fhir": [encounter_class],  # class_fhir is a list
-            "type": [encounter_type],
+            "type": encounter_type,
             "subject": Reference(reference=patient_ref or f"Patient/{patient_id}"),
             "actualPeriod": period  # Changed from 'period' to 'actualPeriod'
         }

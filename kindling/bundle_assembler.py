@@ -29,8 +29,16 @@ class BundleAssembler:
         Returns:
             FHIR Bundle
         """
+        valid_bundle_types = {"transaction", "collection"}
+        if bundle_type not in valid_bundle_types:
+            raise ValueError(f"Unsupported bundle type: {bundle_type}")
+
+        valid_methods = {"POST", "PUT", "CONDITIONAL"}
+        if bundle_type == "transaction" and request_method not in valid_methods:
+            raise ValueError(f"Unsupported request method: {request_method}")
+
         bundle_id = str(uuid.uuid4())
-        entries = []
+        entries: List[BundleEntry] = []
 
         for resource in resources:
             entry = self._create_bundle_entry(resource, bundle_type, request_method, urn_mapping)
@@ -40,7 +48,7 @@ class BundleAssembler:
             id=bundle_id,
             type=bundle_type,
             timestamp=datetime.now().strftime("%Y-%m-%dT%H:%M:%S+00:00"),
-            entry=entries if entries else None
+            entry=entries,
         )
 
         return bundle
@@ -97,36 +105,35 @@ class BundleAssembler:
         Returns:
             BundleEntry
         """
-        # For POST method, use URN UUID and remove resource.id
+        resource_type = resource.resource_type
+
         if request_method == "POST":
             if urn_mapping and resource.id in urn_mapping:
-                # Get the URN UUID for this resource
                 urn_uuid = urn_mapping[resource.id]
             else:
-                # Generate a new URN UUID if not in mapping
                 urn_uuid = str(uuid.uuid4())
 
-            # Create a copy of the resource without the id field
-            resource_dict = resource.dict()
-            # Remove the id field
-            resource_dict.pop('id', None)
+            resource_dict = resource.model_dump(by_alias=True, exclude_none=True)
+            resource_dict.pop("id", None)
+
+            if urn_mapping:
+                self._update_references(resource_dict, urn_mapping)
+
             resource_class = resource.__class__
             resource_without_id = resource_class(**resource_dict)
 
             entry = BundleEntry(
                 resource=resource_without_id,
-                fullUrl=f"urn:uuid:{urn_uuid}"
+                fullUrl=f"urn:uuid:{urn_uuid}",
             )
         else:
-            # For PUT or other methods, keep the resource ID
             entry = BundleEntry(
                 resource=resource,
-                fullUrl=f"urn:uuid:{resource.id}"
+                fullUrl=f"urn:uuid:{resource.id}",
             )
 
         # Add request for transaction bundles
         if bundle_type == "transaction":
-            resource_type = resource.__class__.__name__
             if request_method == "PUT":
                 # PUT with conditional update (upsert)
                 # ifNoneMatch: * means create if doesn't exist
@@ -136,26 +143,23 @@ class BundleAssembler:
                     ifNoneMatch="*"
                 )
             elif request_method == "CONDITIONAL":
-                # Conditional create using identifier
-                # This creates if no matching identifier exists
                 identifier_value = None
-                if hasattr(resource, 'identifier') and resource.identifier:
-                    # Use first identifier as condition
+                if hasattr(resource, "identifier") and resource.identifier:
                     ident = resource.identifier[0]
-                    identifier_value = f"{ident.system}|{ident.value}"
+                    ident_system = getattr(ident, "system", None)
+                    ident_value = getattr(ident, "value", None)
+                    if ident_system and ident_value:
+                        identifier_value = f"{ident_system}|{ident_value}"
+                    elif ident_value:
+                        identifier_value = ident_value
 
-                if identifier_value and resource_type == "Patient":
-                    entry.request = BundleEntryRequest(
-                        method="POST",
-                        url=resource_type,
-                        ifNoneExist=f"identifier={identifier_value}"
-                    )
-                else:
-                    # Regular POST for resources without identifiers
-                    entry.request = BundleEntryRequest(
-                        method="POST",
-                        url=resource_type
-                    )
+                if not identifier_value:
+                    identifier_value = resource.id
+
+                entry.request = BundleEntryRequest(
+                    method="POST",
+                    url=f"{resource_type}?identifier={identifier_value}",
+                )
             else:
                 # POST creates new resource, server assigns ID
                 # Add ifNoneExist for Patient resources with identifiers
@@ -175,3 +179,22 @@ class BundleAssembler:
                     )
 
         return entry
+
+    def _update_references(self, data: Any, urn_mapping: Dict[str, str]) -> None:
+        """Update resource references to URN values for POST bundles."""
+
+        if isinstance(data, dict):
+            for key, value in data.items():
+                if key == "reference" and isinstance(value, str):
+                    if value.startswith("urn:uuid:"):
+                        continue
+                    parts = value.split("/")
+                    if len(parts) == 2:
+                        ref_id = parts[1]
+                        if ref_id in urn_mapping:
+                            data[key] = f"urn:uuid:{urn_mapping[ref_id]}"
+                else:
+                    self._update_references(value, urn_mapping)
+        elif isinstance(data, list):
+            for item in data:
+                self._update_references(item, urn_mapping)
