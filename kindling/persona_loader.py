@@ -5,6 +5,9 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import yaml
+from pydantic import ValidationError
+
+from .schemas import PersonaSchema, format_validation_error
 
 
 class PersonaLoader:
@@ -50,9 +53,19 @@ class PersonaLoader:
             else:
                 data = json.load(f)
 
+        # Validate persona structure
+        try:
+            validated = PersonaSchema(**data)
+        except ValidationError as e:
+            raise ValueError(
+                f"Invalid persona '{persona_name}':\n{format_validation_error(e)}"
+            )
+
+        result = validated.model_dump(by_alias=True, exclude_none=True)
+
         # Cache and return
-        self._personas_cache[persona_name] = data
-        return data
+        self._personas_cache[persona_name] = result
+        return result
 
     def list_personas(self) -> List[str]:
         """List available personas.

@@ -8,7 +8,8 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from kindling.profile_parser import ProfileParser, ProfileSchema
+from kindling.profile_parser import ProfileParser
+from kindling.schemas import ProfileSchema
 
 
 class TestProfileParser:

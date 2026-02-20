@@ -5,18 +5,9 @@ from pathlib import Path
 from typing import Any, Dict, Union
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import ValidationError
 
-
-class ProfileSchema(BaseModel):
-    """Schema for validating profiles."""
-
-    version: str = Field(default="0.1")
-    mode: str = Field(default="cohort", pattern="^(cohort|single)$")
-    demographics: Dict[str, Any] = Field(default_factory=dict)
-    single_patient: Dict[str, Any] = Field(default_factory=dict)
-    resources: Dict[str, Any] = Field(default_factory=dict)
-    output: Dict[str, Any] = Field(default_factory=dict)
+from .schemas import ProfileSchema, format_validation_error
 
 
 class ProfileParser:
@@ -52,7 +43,7 @@ class ProfileParser:
         try:
             profile = ProfileSchema(**data)
         except ValidationError as e:
-            raise ValueError(f"Invalid profile: {e}")
+            raise ValueError(f"Invalid profile:\n{format_validation_error(e)}")
 
         return profile.model_dump()
 
@@ -72,4 +63,4 @@ class ProfileParser:
             ProfileSchema(**profile_dict)
             return True
         except ValidationError as e:
-            raise ValueError(f"Invalid profile: {e}")
+            raise ValueError(f"Invalid profile:\n{format_validation_error(e)}")
