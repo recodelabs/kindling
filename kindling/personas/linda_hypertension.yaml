@@ -30,6 +30,7 @@ resources:
     - Observation
     - MedicationRequest
     - Procedure
+    - DiagnosticReport
     - Coverage
 
   rules:
@@ -87,48 +88,7 @@ resources:
               qty: 12
               lookback_months: 12
 
-          # Lipid panel
-          - loinc: "2093-3"
-            display: "Total Cholesterol"
-            range:
-              min: 180
-              max: 210
-            unit: "mg/dL"
-            times:
-              qty: 4
-              lookback_months: 24
-
-          - loinc: "2085-9"
-            display: "HDL Cholesterol"
-            range:
-              min: 48
-              max: 55
-            unit: "mg/dL"
-            times:
-              qty: 4
-              lookback_months: 24
-
-          - loinc: "13457-7"
-            display: "LDL Cholesterol"
-            range:
-              min: 100
-              max: 125
-            unit: "mg/dL"
-            times:
-              qty: 4
-              lookback_months: 24
-
-          - loinc: "2571-8"
-            display: "Triglycerides"
-            range:
-              min: 140
-              max: 180
-            unit: "mg/dL"
-            times:
-              qty: 4
-              lookback_months: 24
-
-          # BMI (overweight)
+          # BMI (overweight) - vital sign, stays as observation
           - loinc: "39156-5"
             display: "Body mass index (BMI)"
             range:
@@ -139,26 +99,64 @@ resources:
               qty: 4
               lookback_months: 24
 
-          # Kidney function
-          - loinc: "2160-0"
-            display: "Creatinine"
-            range:
-              min: 0.8
-              max: 1.1
-            unit: "mg/dL"
-            times:
-              qty: 4
-              lookback_months: 24
+        diagnostic_reports:
+          # Lipid panel
+          - code:
+              system: "http://loinc.org"
+              value: "57698-3"
+              display: "Lipid panel with direct LDL"
+            category:
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074"
+              code: "LAB"
+              display: "Laboratory"
+            observations:
+              - loinc: "2093-3"
+                display: "Total Cholesterol"
+                range:
+                  min: 180
+                  max: 210
+                unit: "mg/dL"
+              - loinc: "2085-9"
+                display: "HDL Cholesterol"
+                range:
+                  min: 48
+                  max: 55
+                unit: "mg/dL"
+              - loinc: "13457-7"
+                display: "LDL Cholesterol"
+                range:
+                  min: 100
+                  max: 125
+                unit: "mg/dL"
+              - loinc: "2571-8"
+                display: "Triglycerides"
+                range:
+                  min: 140
+                  max: 180
+                unit: "mg/dL"
 
-          - loinc: "33914-3"
-            display: "eGFR"
-            range:
-              min: 65
-              max: 75
-            unit: "mL/min/1.73m2"
-            times:
-              qty: 4
-              lookback_months: 24
+          # Renal function panel
+          - code:
+              system: "http://loinc.org"
+              value: "24362-6"
+              display: "Renal function panel"
+            category:
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074"
+              code: "LAB"
+              display: "Laboratory"
+            observations:
+              - loinc: "2160-0"
+                display: "Creatinine"
+                range:
+                  min: 0.8
+                  max: 1.1
+                unit: "mg/dL"
+              - loinc: "33914-3"
+                display: "eGFR"
+                range:
+                  min: 65
+                  max: 75
+                unit: "mL/min/1.73m2"
 
         meds:
           - rxnorm: "314077"

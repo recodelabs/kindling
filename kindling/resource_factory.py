@@ -24,7 +24,14 @@ from fhir.resources.diagnosticreport import DiagnosticReport
 from fhir.resources.immunization import Immunization
 from fhir.resources.coverage import Coverage
 
-from .config import SYSTEMS, DEFAULT_ADDRESS, DEFAULT_TELECOM, RESOURCE_DEFAULTS
+from .config import (
+    SYSTEMS,
+    DEFAULT_ADDRESS,
+    DEFAULT_TELECOM,
+    RESOURCE_DEFAULTS,
+    OBSERVATION_CATEGORY_SYSTEM,
+    VITAL_SIGNS_LOINC,
+)
 from .utils.random_utils import SeededRandom
 
 
@@ -249,40 +256,87 @@ class ResourceFactory:
             display=observation_def.get("display", "")
         )
 
-        # Generate value within range or use provided value
-        if "value" in observation_def:
-            value = observation_def["value"]
+        # Determine category based on LOINC code
+        if loinc_code in VITAL_SIGNS_LOINC:
+            category_code = "vital-signs"
+            category_display = "Vital Signs"
         else:
-            value_range = observation_def.get("range", {})
-            min_val = value_range.get("min", 0)
-            max_val = value_range.get("max", 100)
-            value = round(self.rng.uniform(min_val, max_val), 2)
-
-        # Create quantity
-        unit = observation_def.get("unit", "1")
-        if not unit:
-            unit = "1"  # Default unit if empty
-        quantity = Quantity(
-            value=value,
-            unit=unit,
-            system="http://unitsofmeasure.org",
-            code=unit
-        )
+            category_code = "laboratory"
+            category_display = "Laboratory"
+        category = [
+            CodeableConcept(
+                coding=[
+                    Coding(
+                        system=OBSERVATION_CATEGORY_SYSTEM,
+                        code=category_code,
+                        display=category_display,
+                    )
+                ]
+            )
+        ]
 
         # Generate effective date (recent)
         days_ago = self.rng.randint(1, 30)
         effective_date = datetime.now() - timedelta(days=days_ago)
 
-        # Create observation
-        observation = Observation(
-            id=observation_id,
-            status=RESOURCE_DEFAULTS["OBSERVATION_STATUS"],
-            code=CodeableConcept(coding=[coding]),
-            subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
-            effectiveDateTime=effective_date.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
-            valueQuantity=quantity
-        )
+        # Build observation kwargs
+        kwargs: Dict[str, Any] = {
+            "id": observation_id,
+            "status": RESOURCE_DEFAULTS["OBSERVATION_STATUS"],
+            "category": category,
+            "code": CodeableConcept(coding=[coding]),
+            "subject": Reference(reference=patient_ref or f"Patient/{patient_id}"),
+            "effectiveDateTime": effective_date.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
+        }
 
+        # Handle component-based observations (e.g., blood pressure panel)
+        components = observation_def.get("components")
+        if components:
+            obs_components = []
+            for comp_def in components:
+                comp_coding = Coding(
+                    system=SYSTEMS["LOINC"],
+                    code=comp_def.get("loinc"),
+                    display=comp_def.get("display", ""),
+                )
+                comp_range = comp_def.get("range", {})
+                comp_value = round(
+                    self.rng.uniform(comp_range.get("min", 0), comp_range.get("max", 100)), 2
+                )
+                comp_unit = comp_def.get("unit", "1") or "1"
+                obs_components.append(
+                    {
+                        "code": CodeableConcept(coding=[comp_coding]),
+                        "valueQuantity": Quantity(
+                            value=comp_value,
+                            unit=comp_unit,
+                            system="http://unitsofmeasure.org",
+                            code=comp_unit,
+                        ),
+                    }
+                )
+            kwargs["component"] = obs_components
+        else:
+            # Simple value observation
+            if "value" in observation_def:
+                value = observation_def["value"]
+            else:
+                value_range = observation_def.get("range", {})
+                min_val = value_range.get("min", 0)
+                max_val = value_range.get("max", 100)
+                value = round(self.rng.uniform(min_val, max_val), 2)
+
+            unit = observation_def.get("unit", "1")
+            if not unit:
+                unit = "1"
+            kwargs["valueQuantity"] = Quantity(
+                value=value,
+                unit=unit,
+                system="http://unitsofmeasure.org",
+                code=unit,
+            )
+
+        observation = Observation(**kwargs)
         return observation
 
     def create_medication_request(

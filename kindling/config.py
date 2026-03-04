@@ -68,6 +68,27 @@ TEST_CODES = {
     "ALBUTEROL_RXNORM": "435"
 }
 
+# Observation category system
+OBSERVATION_CATEGORY_SYSTEM = "http://terminology.hl7.org/CodeSystem/observation-category"
+
+# LOINC codes that are vital signs (per FHIR vital-signs profile)
+VITAL_SIGNS_LOINC = {
+    "85354-9",   # Blood pressure panel
+    "8480-6",    # Systolic blood pressure
+    "8462-4",    # Diastolic blood pressure
+    "8867-4",    # Heart rate
+    "9279-1",    # Respiratory rate
+    "8310-5",    # Body temperature
+    "2708-6",    # SpO2
+    "39156-5",   # BMI
+    "29463-7",   # Body weight
+    "8302-2",    # Body height
+    "8287-5",    # Head circumference
+    "3141-9",    # Body weight (measured)
+    "59408-5",   # SpO2 by pulse oximetry
+    "8478-0",    # Mean blood pressure
+}
+
 # Default values for resources
 RESOURCE_DEFAULTS = {
     "CONDITION_CLINICAL_STATUS": "active",

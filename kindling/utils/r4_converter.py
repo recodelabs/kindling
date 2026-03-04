@@ -12,8 +12,10 @@ def convert_to_r4(resource_dict: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Resource dictionary in R4 format
     """
+    resource_type = resource_dict.get("resourceType")
+
     # Handle MedicationRequest conversion
-    if resource_dict.get("resourceType") == "MedicationRequest":
+    if resource_type == "MedicationRequest":
         # Convert medication.concept to medicationCodeableConcept
         if "medication" in resource_dict:
             medication = resource_dict["medication"]
@@ -21,6 +23,21 @@ def convert_to_r4(resource_dict: Dict[str, Any]) -> Dict[str, Any]:
                 # R5 format: medication.concept -> R4: medicationCodeableConcept
                 resource_dict["medicationCodeableConcept"] = medication["concept"]
                 del resource_dict["medication"]
+
+    # Handle Encounter conversion
+    if resource_type == "Encounter":
+        # R5 actualPeriod -> R4 period
+        if "actualPeriod" in resource_dict:
+            resource_dict["period"] = resource_dict.pop("actualPeriod")
+
+        # R5 class is array of CodeableConcepts -> R4 class is a single Coding
+        enc_class = resource_dict.get("class")
+        if isinstance(enc_class, list) and enc_class:
+            coding_list = enc_class[0].get("coding", [])
+            if coding_list:
+                resource_dict["class"] = coding_list[0]
+            else:
+                resource_dict["class"] = enc_class[0]
 
     return resource_dict
 
