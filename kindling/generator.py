@@ -609,9 +609,7 @@ class Generator:
             if request_method == "POST":
                 obs_urn = self.rng.uuid()
                 urn_mapping[obs_id] = obs_urn
-                obs_ref = f"urn:uuid:{obs_urn}"
-            else:
-                obs_ref = f"Observation/{obs_id}"
+            obs_ref = f"Observation/{obs_id}"
 
             observation = self.resource_factory.create_observation(
                 patient_id=patient.id,
