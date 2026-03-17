@@ -1,0 +1,555 @@
+version: "0.1"
+name: fanta_anc
+description: "24-year-old pregnant woman from Mali with antenatal care visits and anemia at 26 weeks"
+
+patient:
+  identifiers:
+    - system: "http://hospital.example/mrn"
+      value: "MRN-FANTA-001"
+  name:
+    family: "Diallo"
+    given: ["Fanta"]
+  gender: female
+  birthDate: "2002-03-05"
+  address:
+    line: ["Quartier Hamdallaye, Rue 412"]
+    city: "Bamako"
+    state: "Bamako"
+    postalCode: "BP 1234"
+    country: "ML"
+  phone: "+223-76-55-1234"
+
+resources:
+  include:
+    - Patient
+    - Practitioner
+    - Organization
+    - Encounter
+    - Condition
+    - Observation
+    - MedicationRequest
+    - Procedure
+    - DiagnosticReport
+
+  rules:
+    - name: pregnancy_conditions
+      when:
+        condition: "true"
+      then:
+        add_conditions:
+          # Normal pregnancy
+          - code:
+              system: "http://snomed.info/sct"
+              value: "72892002"
+              display: "Normal pregnancy"
+            onset:
+              days_ago: 111
+
+          # Iron deficiency anemia in pregnancy - diagnosed at 26 weeks
+          - code:
+              system: "http://snomed.info/sct"
+              value: "87522002"
+              display: "Iron deficiency anemia"
+            onset:
+              days_ago: 0
+
+        add_observations:
+          # ----- Visit 1: Confirmation (~10 weeks, 111 days ago) -----
+
+          # Blood pressure - visit 1
+          - loinc: "85354-9"
+            display: "Blood pressure panel"
+            components:
+              - loinc: "8480-6"
+                display: "Systolic blood pressure"
+                value: 110
+                unit: "mmHg"
+              - loinc: "8462-4"
+                display: "Diastolic blood pressure"
+                value: 70
+                unit: "mmHg"
+            times:
+              qty: 1
+              days_ago: 111
+
+          # Weight - visit 1 (pre-pregnancy baseline ~55kg)
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 55.2
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 111
+
+          # Height (constant)
+          - loinc: "8302-2"
+            display: "Body height"
+            value: 160.0
+            unit: "cm"
+
+          # BMI - visit 1
+          - loinc: "39156-5"
+            display: "Body mass index (BMI)"
+            value: 21.6
+            unit: "kg/m2"
+            times:
+              qty: 1
+              days_ago: 111
+
+          # Heart rate - visit 1
+          - loinc: "8867-4"
+            display: "Heart rate"
+            value: 78
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 111
+
+          # ----- Visit 2: Routine ANC (~16 weeks, 69 days ago) -----
+
+          - loinc: "85354-9"
+            display: "Blood pressure panel"
+            components:
+              - loinc: "8480-6"
+                display: "Systolic blood pressure"
+                value: 108
+                unit: "mmHg"
+              - loinc: "8462-4"
+                display: "Diastolic blood pressure"
+                value: 68
+                unit: "mmHg"
+            times:
+              qty: 1
+              days_ago: 69
+
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 57.1
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 69
+
+          - loinc: "8867-4"
+            display: "Heart rate"
+            value: 82
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 69
+
+          # Fundal height - visit 2
+          - loinc: "11881-0"
+            display: "Uterus fundal height by tape measure"
+            value: 15
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 69
+
+          # Fetal heart rate - visit 2
+          - loinc: "55283-6"
+            display: "Fetal heart rate"
+            value: 152
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 69
+
+          # ----- Visit 3: Routine ANC (~20 weeks, 41 days ago) -----
+
+          - loinc: "85354-9"
+            display: "Blood pressure panel"
+            components:
+              - loinc: "8480-6"
+                display: "Systolic blood pressure"
+                value: 112
+                unit: "mmHg"
+              - loinc: "8462-4"
+                display: "Diastolic blood pressure"
+                value: 72
+                unit: "mmHg"
+            times:
+              qty: 1
+              days_ago: 41
+
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 58.8
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 41
+
+          - loinc: "8867-4"
+            display: "Heart rate"
+            value: 80
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 41
+
+          - loinc: "11881-0"
+            display: "Uterus fundal height by tape measure"
+            value: 20
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 41
+
+          - loinc: "55283-6"
+            display: "Fetal heart rate"
+            value: 148
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 41
+
+          # ----- Visit 4: Routine ANC (~24 weeks, 13 days ago) -----
+
+          - loinc: "85354-9"
+            display: "Blood pressure panel"
+            components:
+              - loinc: "8480-6"
+                display: "Systolic blood pressure"
+                value: 114
+                unit: "mmHg"
+              - loinc: "8462-4"
+                display: "Diastolic blood pressure"
+                value: 70
+                unit: "mmHg"
+            times:
+              qty: 1
+              days_ago: 13
+
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 60.5
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 13
+
+          - loinc: "8867-4"
+            display: "Heart rate"
+            value: 84
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 13
+
+          - loinc: "11881-0"
+            display: "Uterus fundal height by tape measure"
+            value: 24
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 13
+
+          - loinc: "55283-6"
+            display: "Fetal heart rate"
+            value: 145
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 13
+
+          # ----- Visit 5: Anemia diagnosis (~26 weeks, today) -----
+
+          - loinc: "85354-9"
+            display: "Blood pressure panel"
+            components:
+              - loinc: "8480-6"
+                display: "Systolic blood pressure"
+                value: 110
+                unit: "mmHg"
+              - loinc: "8462-4"
+                display: "Diastolic blood pressure"
+                value: 68
+                unit: "mmHg"
+            times:
+              qty: 1
+              days_ago: 0
+
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 61.2
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 0
+
+          - loinc: "8867-4"
+            display: "Heart rate"
+            value: 92
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 0
+
+          - loinc: "11881-0"
+            display: "Uterus fundal height by tape measure"
+            value: 26
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 0
+
+          - loinc: "55283-6"
+            display: "Fetal heart rate"
+            value: 150
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 0
+
+        diagnostic_reports:
+          # Initial ANC labs at confirmation visit (~10 weeks)
+          - code:
+              system: "http://loinc.org"
+              value: "58410-2"
+              display: "CBC panel - Blood by Automated count"
+            category:
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074"
+              code: "LAB"
+              display: "Laboratory"
+            days_ago: 111
+            observations:
+              - loinc: "718-7"
+                display: "Hemoglobin [Mass/volume] in Blood"
+                value: 12.1
+                unit: "g/dL"
+              - loinc: "4544-3"
+                display: "Hematocrit [Volume Fraction] of Blood"
+                value: 36.5
+                unit: "%"
+              - loinc: "6690-2"
+                display: "Leukocytes [#/volume] in Blood"
+                value: 7.2
+                unit: "10*3/uL"
+              - loinc: "777-3"
+                display: "Platelets [#/volume] in Blood"
+                value: 230
+                unit: "10*3/uL"
+              - loinc: "789-8"
+                display: "Erythrocytes [#/volume] in Blood"
+                value: 4.2
+                unit: "10*6/uL"
+
+          # Blood type and Rh
+          - code:
+              system: "http://loinc.org"
+              value: "882-1"
+              display: "ABO and Rh group [Type] in Blood"
+            category:
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074"
+              code: "LAB"
+              display: "Laboratory"
+            days_ago: 111
+            observations:
+              - loinc: "883-9"
+                display: "ABO group [Type] in Blood"
+                value: "O"
+                unit: ""
+              - loinc: "10331-7"
+                display: "Rh [Type] in Blood"
+                value: "Positive"
+                unit: ""
+
+          # HIV screening
+          - code:
+              system: "http://loinc.org"
+              value: "75622-1"
+              display: "HIV 1 and 2 tests - Meaningful Use set"
+            category:
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074"
+              code: "LAB"
+              display: "Laboratory"
+            days_ago: 111
+            conclusion: "Non-reactive"
+            observations:
+              - loinc: "75622-1"
+                display: "HIV 1 and 2 Ab [Presence] in Serum or Plasma"
+                value: "Non-reactive"
+                unit: ""
+
+          # Syphilis screening (RPR)
+          - code:
+              system: "http://loinc.org"
+              value: "20507-0"
+              display: "Reagin Ab [Presence] in Serum by RPR"
+            category:
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074"
+              code: "LAB"
+              display: "Laboratory"
+            days_ago: 111
+            conclusion: "Non-reactive"
+            observations:
+              - loinc: "20507-0"
+                display: "Reagin Ab [Presence] in Serum by RPR"
+                value: "Non-reactive"
+                unit: ""
+
+          # Urinalysis - initial visit
+          - code:
+              system: "http://loinc.org"
+              value: "24356-8"
+              display: "Urinalysis complete panel in Urine"
+            category:
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074"
+              code: "LAB"
+              display: "Laboratory"
+            days_ago: 111
+            observations:
+              - loinc: "5811-5"
+                display: "Specific gravity of Urine by Test strip"
+                value: 1.020
+                unit: ""
+              - loinc: "5803-2"
+                display: "pH of Urine by Test strip"
+                value: 6.0
+                unit: "[pH]"
+              - loinc: "5804-0"
+                display: "Protein [Presence] in Urine by Test strip"
+                value: "Negative"
+                unit: ""
+              - loinc: "5792-7"
+                display: "Glucose [Presence] in Urine by Test strip"
+                value: "Negative"
+                unit: ""
+
+          # CBC at 26 weeks - ANEMIA CONFIRMED
+          - code:
+              system: "http://loinc.org"
+              value: "58410-2"
+              display: "CBC panel - Blood by Automated count"
+            category:
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074"
+              code: "LAB"
+              display: "Laboratory"
+            days_ago: 0
+            conclusion: "Hemoglobin 9.2 g/dL consistent with iron deficiency anemia in pregnancy. Low MCV and ferritin confirm iron deficiency."
+            observations:
+              - loinc: "718-7"
+                display: "Hemoglobin [Mass/volume] in Blood"
+                value: 9.2
+                unit: "g/dL"
+              - loinc: "4544-3"
+                display: "Hematocrit [Volume Fraction] of Blood"
+                value: 28.1
+                unit: "%"
+              - loinc: "6690-2"
+                display: "Leukocytes [#/volume] in Blood"
+                value: 8.1
+                unit: "10*3/uL"
+              - loinc: "777-3"
+                display: "Platelets [#/volume] in Blood"
+                value: 215
+                unit: "10*3/uL"
+              - loinc: "789-8"
+                display: "Erythrocytes [#/volume] in Blood"
+                value: 3.4
+                unit: "10*6/uL"
+              - loinc: "787-2"
+                display: "MCV [Entitic volume]"
+                value: 72.5
+                unit: "fL"
+
+          # Iron studies confirming iron deficiency
+          - code:
+              system: "http://loinc.org"
+              value: "2498-4"
+              display: "Iron [Mass/volume] in Serum or Plasma"
+            category:
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074"
+              code: "LAB"
+              display: "Laboratory"
+            days_ago: 0
+            conclusion: "Low serum iron and ferritin with elevated TIBC consistent with iron deficiency."
+            observations:
+              - loinc: "2498-4"
+                display: "Iron [Mass/volume] in Serum or Plasma"
+                value: 30
+                unit: "ug/dL"
+              - loinc: "2276-4"
+                display: "Ferritin [Mass/volume] in Serum or Plasma"
+                value: 8
+                unit: "ng/mL"
+              - loinc: "2500-7"
+                display: "Iron binding capacity [Mass/volume] in Serum or Plasma"
+                value: 450
+                unit: "ug/dL"
+
+        meds:
+          # Prenatal vitamins with folic acid - prescribed at confirmation
+          - rxnorm: "433801"
+            display: "folic acid 1 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily"
+            frequency: 1
+            status: "active"
+
+          # Iron supplementation for anemia - prescribed at 26 weeks visit
+          - rxnorm: "310325"
+            display: "ferrous sulfate 325 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth twice daily between meals"
+            frequency: 2
+            status: "active"
+
+        encounters:
+          # Visit 1: Pregnancy confirmation and initial ANC (~10 weeks)
+          - type:
+              system: "http://snomed.info/sct"
+              code: "424441002"
+              display: "Prenatal initial visit"
+            class: "AMB"
+            qty: 1
+            days_ago: 111
+
+          # Visit 2: Routine ANC (~16 weeks)
+          - type:
+              system: "http://snomed.info/sct"
+              code: "424619006"
+              display: "Prenatal visit"
+            class: "AMB"
+            qty: 1
+            days_ago: 69
+
+          # Visit 3: Routine ANC (~20 weeks)
+          - type:
+              system: "http://snomed.info/sct"
+              code: "424619006"
+              display: "Prenatal visit"
+            class: "AMB"
+            qty: 1
+            days_ago: 41
+
+          # Visit 4: Routine ANC (~24 weeks)
+          - type:
+              system: "http://snomed.info/sct"
+              code: "424619006"
+              display: "Prenatal visit"
+            class: "AMB"
+            qty: 1
+            days_ago: 13
+
+          # Visit 5: ANC visit with anemia workup (~26 weeks)
+          - type:
+              system: "http://snomed.info/sct"
+              code: "424619006"
+              display: "Prenatal visit"
+            class: "AMB"
+            qty: 1
+            days_ago: 0
+
+        procedures:
+          # Obstetric ultrasound at ~20 weeks
+          - code:
+              system: "http://snomed.info/sct"
+              value: "268445003"
+              display: "Obstetric ultrasound scan"
+            qty: 1
+            days_ago: 41
+
+output:
+  mode: transaction
+  bundle_size: 100
