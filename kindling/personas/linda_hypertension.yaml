@@ -32,6 +32,8 @@ resources:
     - Procedure
     - DiagnosticReport
     - Coverage
+    - AllergyIntolerance
+    - MedicationStatement
 
   rules:
     - name: cardiovascular_conditions
@@ -44,7 +46,7 @@ resources:
               value: "38341003"
               display: "Essential hypertension"
             onset:
-              years_ago: 10
+              days_ago: 720
 
           - code:
               system: "http://snomed.info/sct"
@@ -55,52 +57,123 @@ resources:
 
           - code:
               system: "http://snomed.info/sct"
-              value: "414916001"
-              display: "Obesity"
-            onset:
-              years_ago: 15
-
-          - code:
-              system: "http://snomed.info/sct"
               value: "77176002"
               display: "Smoker (former)"
             onset:
               years_ago: 5
 
+          # Recent upper respiratory infection
+          - code:
+              system: "http://snomed.info/sct"
+              value: "54150009"
+              display: "Upper respiratory infection"
+            onset:
+              days_ago: 0
+
+        allergies:
+          - code:
+              system: "http://snomed.info/sct"
+              value: "232346004"
+              display: "Cat allergy"
+            criticality: "low"
+            type: "allergy"
+            category:
+              - "environment"
+
+          - code:
+              system: "http://snomed.info/sct"
+              value: "91936005"
+              display: "Penicillin allergy"
+            criticality: "high"
+            type: "allergy"
+            category:
+              - "medication"
+
         add_observations:
-          # Blood pressure (controlled on medication)
+          # Blood pressure trending from uncontrolled to controlled
+          # 8 readings matching 8 hypertension follow-ups over 24 months
           - loinc: "85354-9"
             display: "Blood pressure panel"
             components:
               - loinc: "8480-6"
                 display: "Systolic blood pressure"
-                range:
-                  min: 125
-                  max: 140
+                trend:
+                  start: 158
+                  end: 125
                 unit: "mmHg"
               - loinc: "8462-4"
                 display: "Diastolic blood pressure"
-                range:
-                  min: 78
-                  max: 88
+                trend:
+                  start: 96
+                  end: 78
                 unit: "mmHg"
             times:
-              qty: 12
-              lookback_months: 12
-
-          # BMI (overweight) - vital sign, stays as observation
-          - loinc: "39156-5"
-            display: "Body mass index (BMI)"
-            range:
-              min: 28
-              max: 30
-            unit: "kg/m2"
-            times:
-              qty: 4
+              qty: 8
               lookback_months: 24
 
+          # Height (constant) - 5'9" = 175.3 cm
+          - loinc: "8302-2"
+            display: "Body height"
+            value: 175.3
+            unit: "cm"
+
+          # Weight trending down from 200 lbs (90.7 kg) to 186 lbs (84.4 kg)
+          - loinc: "29463-7"
+            display: "Body weight"
+            trend:
+              start: 90.7
+              end: 84.4
+            unit: "kg"
+            times:
+              qty: 8
+              lookback_months: 24
+
+          # BMI trending down from 29.5 to 27.5
+          - loinc: "39156-5"
+            display: "Body mass index (BMI)"
+            trend:
+              start: 29.5
+              end: 27.5
+            unit: "kg/m2"
+            times:
+              qty: 8
+              lookback_months: 24
+
+          # Sick visit physical exam observations
+          - loinc: "8310-5"
+            display: "Body temperature"
+            value: 37.8
+            unit: "Cel"
+            times:
+              qty: 1
+              days_ago: 0
+
+          - loinc: "8867-4"
+            display: "Heart rate"
+            value: 88
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 0
+
+          - loinc: "9279-1"
+            display: "Respiratory rate"
+            value: 20
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 0
+
+          - loinc: "2708-6"
+            display: "Oxygen saturation"
+            value: 97
+            unit: "%"
+            times:
+              qty: 1
+              days_ago: 0
+
         diagnostic_reports:
-          # Lipid panel
+          # Lipid panel (from annual physical)
           - code:
               system: "http://loinc.org"
               value: "57698-3"
@@ -109,6 +182,7 @@ resources:
               system: "http://terminology.hl7.org/CodeSystem/v2-0074"
               code: "LAB"
               display: "Laboratory"
+            days_ago: 500
             observations:
               - loinc: "2093-3"
                 display: "Total Cholesterol"
@@ -135,7 +209,7 @@ resources:
                   max: 180
                 unit: "mg/dL"
 
-          # Renal function panel
+          # Renal function panel (from annual physical)
           - code:
               system: "http://loinc.org"
               value: "24362-6"
@@ -144,6 +218,7 @@ resources:
               system: "http://terminology.hl7.org/CodeSystem/v2-0074"
               code: "LAB"
               display: "Laboratory"
+            days_ago: 500
             observations:
               - loinc: "2160-0"
                 display: "Creatinine"
@@ -158,60 +233,153 @@ resources:
                   max: 75
                 unit: "mL/min/1.73m2"
 
+          # CBC with elevated WBC (infection)
+          - code:
+              system: "http://loinc.org"
+              value: "58410-2"
+              display: "CBC panel - Blood by Automated count"
+            category:
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074"
+              code: "LAB"
+              display: "Laboratory"
+            days_ago: 0
+            observations:
+              - loinc: "6690-2"
+                display: "Leukocytes [#/volume] in Blood"
+                value: 12.8
+                unit: "10*3/uL"
+              - loinc: "718-7"
+                display: "Hemoglobin [Mass/volume] in Blood"
+                value: 13.2
+                unit: "g/dL"
+              - loinc: "4544-3"
+                display: "Hematocrit [Volume Fraction] of Blood"
+                value: 39.5
+                unit: "%"
+              - loinc: "777-3"
+                display: "Platelets [#/volume] in Blood"
+                value: 245
+                unit: "10*3/uL"
+
+          # Respiratory pathogen panel
+          - code:
+              system: "http://loinc.org"
+              value: "92141-1"
+              display: "Respiratory pathogen DNA+RNA panel"
+            category:
+              system: "http://terminology.hl7.org/CodeSystem/v2-0074"
+              code: "LAB"
+              display: "Laboratory"
+            days_ago: 0
+            conclusion: "Positive for rhinovirus. Negative for influenza A/B, RSV, SARS-CoV-2."
+            observations:
+              - loinc: "92131-2"
+                display: "Rhinovirus RNA [Presence] in Respiratory specimen"
+                value: "Detected"
+                unit: ""
+              - loinc: "85477-8"
+                display: "Influenza virus A RNA [Presence] in Respiratory specimen"
+                value: "Not detected"
+                unit: ""
+              - loinc: "85478-6"
+                display: "Influenza virus B RNA [Presence] in Respiratory specimen"
+                value: "Not detected"
+                unit: ""
+              - loinc: "94500-6"
+                display: "SARS-CoV-2 RNA [Presence] in Respiratory specimen"
+                value: "Not detected"
+                unit: ""
+
+        # Ongoing medications (MedicationStatement - what she's taking)
+        medication_statements:
+          - rxnorm: "314077"
+            display: "lisinopril 20 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily"
+
+          - rxnorm: "866426"
+            display: "hydrochlorothiazide 25 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily in the morning"
+
+          - rxnorm: "617312"
+            display: "atorvastatin 40 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily at bedtime"
+
+          - rxnorm: "308136"
+            display: "amlodipine 5 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily"
+
+          - rxnorm: "197361"
+            display: "aspirin 81 MG Oral Tablet"
+            sig: "Take 1 tablet by mouth daily"
+
+        # Prescriptions (MedicationRequest)
         meds:
+          # Original chronic med prescriptions (completed/filled)
           - rxnorm: "314077"
             display: "lisinopril 20 MG Oral Tablet"
             sig: "Take 1 tablet by mouth daily"
             frequency: 1
-            adherence:
-              prob: 0.92
+            status: "completed"
 
           - rxnorm: "866426"
             display: "hydrochlorothiazide 25 MG Oral Tablet"
             sig: "Take 1 tablet by mouth daily in the morning"
             frequency: 1
-            adherence:
-              prob: 0.90
+            status: "completed"
 
           - rxnorm: "617312"
             display: "atorvastatin 40 MG Oral Tablet"
             sig: "Take 1 tablet by mouth daily at bedtime"
             frequency: 1
-            adherence:
-              prob: 0.88
+            status: "completed"
 
           - rxnorm: "308136"
             display: "amlodipine 5 MG Oral Tablet"
             sig: "Take 1 tablet by mouth daily"
             frequency: 1
-            adherence:
-              prob: 0.91
+            status: "completed"
 
           - rxnorm: "197361"
             display: "aspirin 81 MG Oral Tablet"
             sig: "Take 1 tablet by mouth daily"
             frequency: 1
-            adherence:
-              prob: 0.95
+            status: "completed"
+
+          # Active prescription for upper respiratory infection
+          - rxnorm: "308182"
+            display: "amoxicillin 500 MG Oral Capsule"
+            sig: "Take 1 capsule by mouth three times daily for 10 days"
+            frequency: 3
+            status: "active"
 
         encounters:
-          # Quarterly blood pressure checks
+          # Initial visit where hypertension was diagnosed
+          - type:
+              system: "http://snomed.info/sct"
+              code: "170527006"
+              display: "Hypertension screening"
+            class: "AMB"
+            qty: 1
+            days_ago: 720
+
+          # Quarterly hypertension follow-ups (most recent on March 1)
           - type:
               system: "http://snomed.info/sct"
               code: "390848009"
               display: "Hypertension follow-up"
             class: "AMB"
-            qty: 8
-            spread_months: 24
+            qty: 7
+            days_ago: 5
+            spread_months: 21
 
-          # Annual physical exam
+          # Annual physical exam (offset to avoid overlap)
           - type:
               system: "http://snomed.info/sct"
               code: "162673000"
               display: "General examination"
             class: "AMB"
-            qty: 2
-            spread_months: 24
+            qty: 1
+            days_ago: 500
 
           # Cardiology consultation
           - type:
@@ -221,6 +389,15 @@ resources:
             class: "AMB"
             qty: 1
             days_ago: 365
+
+          # Recent sick visit for upper respiratory infection
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185345009"
+              display: "Sick visit for upper respiratory infection"
+            class: "AMB"
+            qty: 1
+            days_ago: 0
 
         procedures:
           # EKG
@@ -238,6 +415,21 @@ resources:
               display: "Echocardiography"
             qty: 1
             days_ago: 180
+
+        immunizations:
+          # COVID-19 vaccine (Moderna) - 2-dose primary series
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "207"
+              display: "COVID-19 Moderna vaccine"
+            qty: 2
+            days_ago: 1825
+            site:
+              code: "LA"
+              display: "Left arm"
+            route:
+              code: "IM"
+              display: "Intramuscular"
 
 output:
   mode: transaction

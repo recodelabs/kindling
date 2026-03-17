@@ -24,6 +24,41 @@ def convert_to_r4(resource_dict: Dict[str, Any]) -> Dict[str, Any]:
                 resource_dict["medicationCodeableConcept"] = medication["concept"]
                 del resource_dict["medication"]
 
+    # Handle MedicationStatement conversion
+    if resource_type == "MedicationStatement":
+        # R5 medication (CodeableReference) -> R4 medicationCodeableConcept
+        if "medication" in resource_dict:
+            medication = resource_dict["medication"]
+            if isinstance(medication, dict) and "concept" in medication:
+                resource_dict["medicationCodeableConcept"] = medication["concept"]
+                del resource_dict["medication"]
+
+        # R5 encounter -> R4 context
+        if "encounter" in resource_dict:
+            resource_dict["context"] = resource_dict.pop("encounter")
+
+        # R5 status "recorded" -> R4 "completed"
+        r4_med_stmt_statuses = {"active", "completed", "entered-in-error", "intended", "stopped", "on-hold"}
+        if resource_dict.get("status") not in r4_med_stmt_statuses:
+            status = resource_dict.get("status", "")
+            if status == "recorded":
+                resource_dict["status"] = "active"
+            elif status == "draft":
+                resource_dict["status"] = "intended"
+            else:
+                resource_dict["status"] = "active"
+
+    # Handle AllergyIntolerance conversion
+    if resource_type == "AllergyIntolerance":
+        # R5 type is CodeableConcept -> R4 type is a plain code string
+        allergy_type = resource_dict.get("type")
+        if isinstance(allergy_type, dict):
+            coding = allergy_type.get("coding", [])
+            if coding:
+                resource_dict["type"] = coding[0].get("code", "allergy")
+            else:
+                resource_dict["type"] = "allergy"
+
     # Handle Encounter conversion
     if resource_type == "Encounter":
         # R5 actualPeriod -> R4 period

@@ -23,6 +23,8 @@ from fhir.resources.relatedperson import RelatedPerson
 from fhir.resources.diagnosticreport import DiagnosticReport
 from fhir.resources.immunization import Immunization
 from fhir.resources.coverage import Coverage
+from fhir.resources.allergyintolerance import AllergyIntolerance
+from fhir.resources.medicationstatement import MedicationStatement
 
 from .config import (
     SYSTEMS,
@@ -172,7 +174,8 @@ class ResourceFactory:
         patient_id: str,
         condition_def: Dict[str, Any],
         patient_ref: Optional[str] = None,
-        condition_id: Optional[str] = None
+        condition_id: Optional[str] = None,
+        encounter_ref: Optional[str] = None,
     ) -> Condition:
         """Create a Condition resource.
 
@@ -197,8 +200,10 @@ class ResourceFactory:
 
         # Calculate onset date
         onset = condition_def.get("onset", {})
-        if years_ago := onset.get("years_ago"):
-            onset_date = datetime.now() - timedelta(days=years_ago * 365)
+        if onset.get("years_ago") is not None:
+            onset_date = datetime.now() - timedelta(days=onset["years_ago"] * 365)
+        elif onset.get("days_ago") is not None:
+            onset_date = datetime.now() - timedelta(days=onset["days_ago"])
         else:
             onset_date = datetime.now() - timedelta(days=365)  # Default 1 year ago
 
@@ -223,7 +228,8 @@ class ResourceFactory:
             ),
             code=CodeableConcept(coding=[coding]),
             subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
-            onsetDateTime=onset_date.strftime("%Y-%m-%d")
+            onsetDateTime=onset_date.strftime("%Y-%m-%d"),
+            encounter=Reference(reference=encounter_ref) if encounter_ref else None,
         )
 
         return condition
@@ -233,7 +239,9 @@ class ResourceFactory:
         patient_id: str,
         observation_def: Dict[str, Any],
         patient_ref: Optional[str] = None,
-        observation_id: Optional[str] = None
+        observation_id: Optional[str] = None,
+        encounter_ref: Optional[str] = None,
+        effective_datetime: Optional[datetime] = None,
     ) -> Observation:
         """Create an Observation resource.
 
@@ -275,9 +283,12 @@ class ResourceFactory:
             )
         ]
 
-        # Generate effective date (recent)
-        days_ago = self.rng.randint(1, 30)
-        effective_date = datetime.now() - timedelta(days=days_ago)
+        # Use provided effective_datetime or generate a recent one
+        if effective_datetime is not None:
+            effective_date = effective_datetime
+        else:
+            days_ago = self.rng.randint(1, 30)
+            effective_date = datetime.now() - timedelta(days=days_ago)
 
         # Build observation kwargs
         kwargs: Dict[str, Any] = {
@@ -289,6 +300,10 @@ class ResourceFactory:
             "effectiveDateTime": effective_date.strftime("%Y-%m-%dT%H:%M:%S+00:00"),
         }
 
+        # Add encounter reference if provided
+        if encounter_ref:
+            kwargs["encounter"] = Reference(reference=encounter_ref)
+
         # Handle component-based observations (e.g., blood pressure panel)
         components = observation_def.get("components")
         if components:
@@ -299,22 +314,25 @@ class ResourceFactory:
                     code=comp_def.get("loinc"),
                     display=comp_def.get("display", ""),
                 )
-                comp_range = comp_def.get("range", {})
-                comp_value = round(
-                    self.rng.uniform(comp_range.get("min", 0), comp_range.get("max", 100)), 2
-                )
+                if "value" in comp_def:
+                    comp_value = comp_def["value"]
+                else:
+                    comp_range = comp_def.get("range", {})
+                    comp_value = round(
+                        self.rng.uniform(comp_range.get("min", 0), comp_range.get("max", 100)), 2
+                    )
                 comp_unit = comp_def.get("unit", "1") or "1"
-                obs_components.append(
-                    {
-                        "code": CodeableConcept(coding=[comp_coding]),
-                        "valueQuantity": Quantity(
-                            value=comp_value,
-                            unit=comp_unit,
-                            system="http://unitsofmeasure.org",
-                            code=comp_unit,
-                        ),
-                    }
-                )
+                comp_entry = {"code": CodeableConcept(coding=[comp_coding])}
+                if isinstance(comp_value, str):
+                    comp_entry["valueString"] = comp_value
+                else:
+                    comp_entry["valueQuantity"] = Quantity(
+                        value=comp_value,
+                        unit=comp_unit,
+                        system="http://unitsofmeasure.org",
+                        code=comp_unit,
+                    )
+                obs_components.append(comp_entry)
             kwargs["component"] = obs_components
         else:
             # Simple value observation
@@ -326,15 +344,18 @@ class ResourceFactory:
                 max_val = value_range.get("max", 100)
                 value = round(self.rng.uniform(min_val, max_val), 2)
 
-            unit = observation_def.get("unit", "1")
-            if not unit:
-                unit = "1"
-            kwargs["valueQuantity"] = Quantity(
-                value=value,
-                unit=unit,
-                system="http://unitsofmeasure.org",
-                code=unit,
-            )
+            if isinstance(value, str):
+                kwargs["valueString"] = value
+            else:
+                unit = observation_def.get("unit", "1")
+                if not unit:
+                    unit = "1"
+                kwargs["valueQuantity"] = Quantity(
+                    value=value,
+                    unit=unit,
+                    system="http://unitsofmeasure.org",
+                    code=unit,
+                )
 
         observation = Observation(**kwargs)
         return observation
@@ -344,7 +365,8 @@ class ResourceFactory:
         patient_id: str,
         medication_def: Dict[str, Any],
         patient_ref: Optional[str] = None,
-        medication_id: Optional[str] = None
+        medication_id: Optional[str] = None,
+        encounter_ref: Optional[str] = None,
     ) -> MedicationRequest:
         """Create a MedicationRequest resource.
 
@@ -389,14 +411,15 @@ class ResourceFactory:
         # Create medication request
         med_request = MedicationRequest(
             id=med_request_id,
-            status=RESOURCE_DEFAULTS["MEDICATION_REQUEST_STATUS"],
-            intent=RESOURCE_DEFAULTS["MEDICATION_REQUEST_INTENT"],
+            status=medication_def.get("status", RESOURCE_DEFAULTS["MEDICATION_REQUEST_STATUS"]),
+            intent=medication_def.get("intent", RESOURCE_DEFAULTS["MEDICATION_REQUEST_INTENT"]),
             medication=CodeableReference(
                 concept=CodeableConcept(coding=[coding])
             ),
             subject=Reference(reference=patient_ref or f"Patient/{patient_id}"),
             authoredOn=datetime.now().strftime("%Y-%m-%dT%H:%M:%S+00:00"),
-            dosageInstruction=[dosage]
+            dosageInstruction=[dosage],
+            encounter=Reference(reference=encounter_ref) if encounter_ref else None,
         )
 
         return med_request
@@ -659,7 +682,8 @@ class ResourceFactory:
         diagnostic_report_def: Dict[str, Any],
         observation_refs: Optional[List[str]] = None,
         patient_ref: Optional[str] = None,
-        report_id: Optional[str] = None
+        report_id: Optional[str] = None,
+        encounter_ref: Optional[str] = None,
     ) -> DiagnosticReport:
         """Create a DiagnosticReport resource.
 
@@ -733,6 +757,10 @@ class ResourceFactory:
             kwargs["result"] = result_refs
         if conclusion:
             kwargs["conclusion"] = conclusion
+
+        # Add encounter reference if provided
+        if encounter_ref:
+            kwargs["encounter"] = Reference(reference=encounter_ref)
 
         # Add effective date if specified
         if effective_date := diagnostic_report_def.get("effectiveDateTime"):
@@ -941,3 +969,137 @@ class ResourceFactory:
         coverage = Coverage(**kwargs)
 
         return coverage
+
+    def create_allergy_intolerance(
+        self,
+        patient_id: str,
+        allergy_def: Dict[str, Any],
+        patient_ref: Optional[str] = None,
+        allergy_id: Optional[str] = None,
+        encounter_ref: Optional[str] = None,
+    ) -> AllergyIntolerance:
+        """Create an AllergyIntolerance resource.
+
+        Args:
+            patient_id: Patient ID reference
+            allergy_def: Allergy definition
+            patient_ref: Optional custom patient reference
+            allergy_id: Optional AllergyIntolerance ID
+            encounter_ref: Optional encounter reference
+
+        Returns:
+            AllergyIntolerance resource
+        """
+        allergy_id = allergy_id or self.rng.uuid()
+
+        code_data = allergy_def.get("code", {})
+        coding = Coding(
+            system=code_data.get("system", SYSTEMS["SNOMED"]),
+            code=code_data.get("value"),
+            display=code_data.get("display"),
+        )
+
+        kwargs: Dict[str, Any] = {
+            "id": allergy_id,
+            "clinicalStatus": CodeableConcept(
+                coding=[
+                    Coding(
+                        system="http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+                        code="active",
+                        display="Active",
+                    )
+                ]
+            ),
+            "verificationStatus": CodeableConcept(
+                coding=[
+                    Coding(
+                        system="http://terminology.hl7.org/CodeSystem/allergyintolerance-verification",
+                        code="confirmed",
+                        display="Confirmed",
+                    )
+                ]
+            ),
+            "code": CodeableConcept(coding=[coding]),
+            "patient": Reference(reference=patient_ref or f"Patient/{patient_id}"),
+        }
+
+        if criticality := allergy_def.get("criticality"):
+            kwargs["criticality"] = criticality
+
+        if allergy_type := allergy_def.get("type"):
+            type_mapping = {
+                "allergy": ("allergy", "Allergy"),
+                "intolerance": ("intolerance", "Intolerance"),
+            }
+            code, display = type_mapping.get(allergy_type, (allergy_type, allergy_type))
+            kwargs["type"] = CodeableConcept(
+                coding=[
+                    Coding(
+                        system="http://hl7.org/fhir/allergy-intolerance-type",
+                        code=code,
+                        display=display,
+                    )
+                ]
+            )
+
+        if encounter_ref:
+            kwargs["encounter"] = Reference(reference=encounter_ref)
+
+        if category := allergy_def.get("category"):
+            kwargs["category"] = category if isinstance(category, list) else [category]
+
+        allergy = AllergyIntolerance(**kwargs)
+        return allergy
+
+    def create_medication_statement(
+        self,
+        patient_id: str,
+        medication_def: Dict[str, Any],
+        patient_ref: Optional[str] = None,
+        medication_id: Optional[str] = None,
+        encounter_ref: Optional[str] = None,
+    ) -> MedicationStatement:
+        """Create a MedicationStatement resource.
+
+        Args:
+            patient_id: Patient ID reference
+            medication_def: Medication definition
+            patient_ref: Optional custom patient reference
+            medication_id: Optional MedicationStatement ID
+            encounter_ref: Optional encounter reference
+
+        Returns:
+            MedicationStatement resource
+        """
+        medication_id = medication_id or self.rng.uuid()
+
+        rxnorm_code = medication_def.get("rxnorm")
+        coding = Coding(
+            system=SYSTEMS["RXNORM"],
+            code=rxnorm_code,
+            display=medication_def.get("display", ""),
+        )
+
+        kwargs: Dict[str, Any] = {
+            "id": medication_id,
+            "status": medication_def.get("status", "recorded"),
+            "medication": CodeableReference(
+                concept=CodeableConcept(coding=[coding])
+            ),
+            "subject": Reference(reference=patient_ref or f"Patient/{patient_id}"),
+            "dateAsserted": datetime.now().strftime("%Y-%m-%dT%H:%M:%S+00:00"),
+        }
+
+        if sig := medication_def.get("sig"):
+            kwargs["dosage"] = [Dosage(text=sig)]
+
+        if encounter_ref:
+            kwargs["encounter"] = Reference(reference=encounter_ref)
+
+        if effective_period := medication_def.get("effective_period"):
+            start = effective_period.get("start")
+            end = effective_period.get("end")
+            kwargs["effectivePeriod"] = Period(start=start, end=end)
+
+        med_statement = MedicationStatement(**kwargs)
+        return med_statement

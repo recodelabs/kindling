@@ -2,7 +2,7 @@
 name: kindling
 description: Generate FHIR R4 synthetic healthcare data using Kindling. Use when generating test patients, creating FHIR bundles, making synthetic healthcare data, or working with personas.
 argument-hint: "[persona name or description of patient]"
-allowed-tools: Bash(source*kindling*), Bash(source*kindling-validate*), Bash(source*python3*), Write, Read, Glob, Grep
+allowed-tools: Bash(uv run kindling*), Bash(uv run kindling-validate*), Write, Read, Glob, Grep
 ---
 
 # Kindling - FHIR R4 Synthetic Data Generator
@@ -11,18 +11,23 @@ Generate realistic, deterministic FHIR R4 bundles from profiles and personas.
 
 ## Setup
 
-Always activate the venv before running kindling:
+Use `uv run` to run kindling (no venv activation needed):
 ```bash
-source /Users/mberg/github/kindling/.venv/bin/activate && kindling [OPTIONS]
+uv run kindling [OPTIONS]
 ```
 
 ## Available Personas
 
-!`ls kindling/personas/*.yaml 2>/dev/null | xargs -I{} basename {} .yaml | grep -v __init__`
+- david_healthy
+- grace_tb
+- john_asthma
+- linda_hypertension
+- mary_diabetes
+- nomsa_diabetes_malaria
 
 List personas programmatically:
 ```bash
-kindling --list-personas
+uv run kindling --list-personas
 ```
 
 ## CLI Reference

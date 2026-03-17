@@ -172,7 +172,7 @@ class ObservationDef(BaseModel):
     display: Optional[str] = None
     range: Optional[ValueRange] = None
     unit: Optional[str] = None
-    value: Optional[float] = None
+    value: Optional[Any] = None
     times: Optional[TimesConfig] = None
     components: Optional[List[Any]] = None
     value_type: Optional[str] = None
