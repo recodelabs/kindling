@@ -1,0 +1,637 @@
+version: "0.1"
+name: babacar_child
+description: "11-month-old healthy boy from Mali with complete WHO immunization schedule and diarrhea episode at 6 months"
+
+patient:
+  identifiers:
+    - system: "http://hospital.example/mrn"
+      value: "MRN-BABACAR-001"
+  name:
+    family: "Diallo"
+    given: ["Babacar"]
+  gender: male
+  birthDate: "2025-04-01"
+  address:
+    line: ["Quartier Hamdallaye, Rue 412"]
+    city: "Bamako"
+    state: "Bamako"
+    postalCode: "BP 1234"
+    country: "ML"
+
+resources:
+  include:
+    - Patient
+    - Practitioner
+    - Organization
+    - Encounter
+    - Condition
+    - Observation
+    - MedicationRequest
+    - Procedure
+    - DiagnosticReport
+    - Immunization
+
+  rules:
+    - name: child_health
+      when:
+        condition: "true"
+      then:
+        add_conditions:
+          # Acute diarrhea episode at 6 months
+          - code:
+              system: "http://snomed.info/sct"
+              value: "62315008"
+              display: "Diarrhea"
+            onset:
+              days_ago: 167
+
+        add_observations:
+          # =============================================
+          # BIRTH (April 1, 2025 = 351 days ago)
+          # WHO 50th percentile boy at birth
+          # =============================================
+
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 3.3
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 351
+
+          - loinc: "89269-5"
+            display: "Body height - lying"
+            value: 49.9
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 351
+
+          - loinc: "9843-4"
+            display: "Head circumference"
+            value: 34.5
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 351
+
+          # =============================================
+          # 6 WEEKS (May 13, 2025 = 308 days ago)
+          # =============================================
+
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 4.9
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 308
+
+          - loinc: "89269-5"
+            display: "Body height - lying"
+            value: 55.5
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 308
+
+          - loinc: "9843-4"
+            display: "Head circumference"
+            value: 38.0
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 308
+
+          - loinc: "8310-5"
+            display: "Body temperature"
+            value: 36.8
+            unit: "Cel"
+            times:
+              qty: 1
+              days_ago: 308
+
+          # =============================================
+          # 10 WEEKS (June 10, 2025 = 280 days ago)
+          # =============================================
+
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 5.8
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 280
+
+          - loinc: "89269-5"
+            display: "Body height - lying"
+            value: 59.0
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 280
+
+          - loinc: "9843-4"
+            display: "Head circumference"
+            value: 39.5
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 280
+
+          - loinc: "8310-5"
+            display: "Body temperature"
+            value: 37.0
+            unit: "Cel"
+            times:
+              qty: 1
+              days_ago: 280
+
+          # =============================================
+          # 14 WEEKS (July 8, 2025 = 252 days ago)
+          # =============================================
+
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 6.4
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 252
+
+          - loinc: "89269-5"
+            display: "Body height - lying"
+            value: 62.0
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 252
+
+          - loinc: "9843-4"
+            display: "Head circumference"
+            value: 40.5
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 252
+
+          - loinc: "8310-5"
+            display: "Body temperature"
+            value: 36.9
+            unit: "Cel"
+            times:
+              qty: 1
+              days_ago: 252
+
+          # =============================================
+          # 6 MONTHS (Oct 1, 2025 = 167 days ago)
+          # Diarrhea visit + Vitamin A
+          # =============================================
+
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 7.9
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 167
+
+          - loinc: "89269-5"
+            display: "Body height - lying"
+            value: 67.6
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 167
+
+          - loinc: "9843-4"
+            display: "Head circumference"
+            value: 43.3
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 167
+
+          - loinc: "8310-5"
+            display: "Body temperature"
+            value: 37.5
+            unit: "Cel"
+            times:
+              qty: 1
+              days_ago: 167
+
+          - loinc: "8867-4"
+            display: "Heart rate"
+            value: 130
+            unit: "/min"
+            times:
+              qty: 1
+              days_ago: 167
+
+          # =============================================
+          # 9 MONTHS (Jan 1, 2026 = 75 days ago)
+          # =============================================
+
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 8.9
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 75
+
+          - loinc: "89269-5"
+            display: "Body height - lying"
+            value: 72.0
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 75
+
+          - loinc: "9843-4"
+            display: "Head circumference"
+            value: 45.2
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 75
+
+          - loinc: "8310-5"
+            display: "Body temperature"
+            value: 36.7
+            unit: "Cel"
+            times:
+              qty: 1
+              days_ago: 75
+
+          # =============================================
+          # ~11.5 MONTHS - most recent well-child (today)
+          # =============================================
+
+          - loinc: "29463-7"
+            display: "Body weight"
+            value: 9.5
+            unit: "kg"
+            times:
+              qty: 1
+              days_ago: 0
+
+          - loinc: "89269-5"
+            display: "Body height - lying"
+            value: 75.0
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 0
+
+          - loinc: "9843-4"
+            display: "Head circumference"
+            value: 46.0
+            unit: "cm"
+            times:
+              qty: 1
+              days_ago: 0
+
+          - loinc: "8310-5"
+            display: "Body temperature"
+            value: 36.8
+            unit: "Cel"
+            times:
+              qty: 1
+              days_ago: 0
+
+        immunizations:
+          # =============================================
+          # BIRTH (351 days ago) - BCG, OPV-0, HepB birth dose
+          # =============================================
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "19"
+              display: "BCG vaccine"
+            qty: 1
+            days_ago: 351
+            site:
+              code: "LA"
+              display: "Left arm"
+            route:
+              code: "ID"
+              display: "Intradermal"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "02"
+              display: "Oral polio vaccine (OPV) - birth dose"
+            qty: 1
+            days_ago: 351
+            route:
+              code: "PO"
+              display: "Oral"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "45"
+              display: "Hepatitis B vaccine - birth dose"
+            qty: 1
+            days_ago: 351
+            site:
+              code: "RT"
+              display: "Right thigh"
+            route:
+              code: "IM"
+              display: "Intramuscular"
+
+          # =============================================
+          # 6 WEEKS (308 days ago) - Penta-1, OPV-1, PCV-1, Rota-1
+          # =============================================
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "102"
+              display: "DTP-Hib-HepB (Pentavalent) vaccine - dose 1"
+            qty: 1
+            days_ago: 308
+            site:
+              code: "LT"
+              display: "Left thigh"
+            route:
+              code: "IM"
+              display: "Intramuscular"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "02"
+              display: "Oral polio vaccine (OPV) - dose 1"
+            qty: 1
+            days_ago: 308
+            route:
+              code: "PO"
+              display: "Oral"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "133"
+              display: "Pneumococcal conjugate vaccine (PCV13) - dose 1"
+            qty: 1
+            days_ago: 308
+            site:
+              code: "RT"
+              display: "Right thigh"
+            route:
+              code: "IM"
+              display: "Intramuscular"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "119"
+              display: "Rotavirus vaccine (Rotarix) - dose 1"
+            qty: 1
+            days_ago: 308
+            route:
+              code: "PO"
+              display: "Oral"
+
+          # =============================================
+          # 10 WEEKS (280 days ago) - Penta-2, OPV-2, PCV-2, Rota-2
+          # =============================================
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "102"
+              display: "DTP-Hib-HepB (Pentavalent) vaccine - dose 2"
+            qty: 1
+            days_ago: 280
+            site:
+              code: "LT"
+              display: "Left thigh"
+            route:
+              code: "IM"
+              display: "Intramuscular"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "02"
+              display: "Oral polio vaccine (OPV) - dose 2"
+            qty: 1
+            days_ago: 280
+            route:
+              code: "PO"
+              display: "Oral"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "133"
+              display: "Pneumococcal conjugate vaccine (PCV13) - dose 2"
+            qty: 1
+            days_ago: 280
+            site:
+              code: "RT"
+              display: "Right thigh"
+            route:
+              code: "IM"
+              display: "Intramuscular"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "119"
+              display: "Rotavirus vaccine (Rotarix) - dose 2"
+            qty: 1
+            days_ago: 280
+            route:
+              code: "PO"
+              display: "Oral"
+
+          # =============================================
+          # 14 WEEKS (252 days ago) - Penta-3, OPV-3, PCV-3, IPV
+          # =============================================
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "102"
+              display: "DTP-Hib-HepB (Pentavalent) vaccine - dose 3"
+            qty: 1
+            days_ago: 252
+            site:
+              code: "LT"
+              display: "Left thigh"
+            route:
+              code: "IM"
+              display: "Intramuscular"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "02"
+              display: "Oral polio vaccine (OPV) - dose 3"
+            qty: 1
+            days_ago: 252
+            route:
+              code: "PO"
+              display: "Oral"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "133"
+              display: "Pneumococcal conjugate vaccine (PCV13) - dose 3"
+            qty: 1
+            days_ago: 252
+            site:
+              code: "RT"
+              display: "Right thigh"
+            route:
+              code: "IM"
+              display: "Intramuscular"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "10"
+              display: "Inactivated polio vaccine (IPV)"
+            qty: 1
+            days_ago: 252
+            site:
+              code: "LT"
+              display: "Left thigh"
+            route:
+              code: "IM"
+              display: "Intramuscular"
+
+          # =============================================
+          # 9 MONTHS (75 days ago) - Measles-1, Yellow Fever, MenA
+          # =============================================
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "05"
+              display: "Measles vaccine - dose 1"
+            qty: 1
+            days_ago: 75
+            site:
+              code: "LA"
+              display: "Left arm"
+            route:
+              code: "SC"
+              display: "Subcutaneous"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "37"
+              display: "Yellow fever vaccine"
+            qty: 1
+            days_ago: 75
+            site:
+              code: "RA"
+              display: "Right arm"
+            route:
+              code: "SC"
+              display: "Subcutaneous"
+
+          - vaccine:
+              system: "http://hl7.org/fhir/sid/cvx"
+              code: "108"
+              display: "Meningococcal A conjugate vaccine (MenAfriVac)"
+            qty: 1
+            days_ago: 75
+            site:
+              code: "RT"
+              display: "Right thigh"
+            route:
+              code: "IM"
+              display: "Intramuscular"
+
+        meds:
+          # Zinc for diarrhea at 6 months - WHO: 20mg/day x 10 days for >6 months
+          - rxnorm: "197867"
+            display: "zinc sulfate 20 MG Oral Tablet"
+            sig: "Dissolve 1 tablet in breast milk or clean water, give once daily for 10 days"
+            frequency: 1
+            status: "completed"
+
+          # ORS for diarrhea at 6 months
+          - rxnorm: "857005"
+            display: "oral rehydration salts"
+            sig: "Give small frequent sips after each loose stool"
+            frequency: 1
+            status: "completed"
+
+          # Vitamin A supplementation at 6 months (100,000 IU)
+          - rxnorm: "198026"
+            display: "Vitamin A 100000 UNT Oral Capsule"
+            sig: "Administer single dose at clinic visit"
+            frequency: 1
+            status: "completed"
+
+        encounters:
+          # Birth / newborn visit
+          - type:
+              system: "http://snomed.info/sct"
+              code: "169762003"
+              display: "Postnatal visit - newborn"
+            class: "AMB"
+            qty: 1
+            days_ago: 351
+
+          # 6-week immunization visit
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185349003"
+              display: "Well child visit"
+            class: "AMB"
+            qty: 1
+            days_ago: 308
+
+          # 10-week immunization visit
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185349003"
+              display: "Well child visit"
+            class: "AMB"
+            qty: 1
+            days_ago: 280
+
+          # 14-week immunization visit
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185349003"
+              display: "Well child visit"
+            class: "AMB"
+            qty: 1
+            days_ago: 252
+
+          # 6-month visit - diarrhea + Vitamin A
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185345009"
+              display: "Sick child visit - diarrhea"
+            class: "AMB"
+            qty: 1
+            days_ago: 167
+
+          # 9-month immunization visit
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185349003"
+              display: "Well child visit"
+            class: "AMB"
+            qty: 1
+            days_ago: 75
+
+          # Current well-child visit (~11.5 months)
+          - type:
+              system: "http://snomed.info/sct"
+              code: "185349003"
+              display: "Well child visit"
+            class: "AMB"
+            qty: 1
+            days_ago: 0
+
+        procedures:
+          # Vitamin A supplementation at 6 months
+          - code:
+              system: "http://snomed.info/sct"
+              value: "312232006"
+              display: "Vitamin A supplementation"
+            qty: 1
+            days_ago: 167
+
+output:
+  mode: transaction
+  bundle_size: 100
