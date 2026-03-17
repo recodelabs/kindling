@@ -57,7 +57,7 @@ resources:
             unit: "kg"
             times:
               qty: 1
-              days_ago: 351
+              days_ago: 350
 
           - loinc: "89269-5"
             display: "Body height - lying"
@@ -65,7 +65,7 @@ resources:
             unit: "cm"
             times:
               qty: 1
-              days_ago: 351
+              days_ago: 350
 
           - loinc: "9843-4"
             display: "Head circumference"
@@ -73,7 +73,7 @@ resources:
             unit: "cm"
             times:
               qty: 1
-              days_ago: 351
+              days_ago: 350
 
           # =============================================
           # 6 WEEKS (May 13, 2025 = 308 days ago)
@@ -310,7 +310,7 @@ resources:
               code: "19"
               display: "BCG vaccine"
             qty: 1
-            days_ago: 351
+            days_ago: 350
             site:
               code: "LA"
               display: "Left arm"
@@ -323,7 +323,7 @@ resources:
               code: "02"
               display: "Oral polio vaccine (OPV) - birth dose"
             qty: 1
-            days_ago: 351
+            days_ago: 350
             route:
               code: "PO"
               display: "Oral"
@@ -333,7 +333,7 @@ resources:
               code: "45"
               display: "Hepatitis B vaccine - birth dose"
             qty: 1
-            days_ago: 351
+            days_ago: 350
             site:
               code: "RT"
               display: "Right thigh"
@@ -567,7 +567,7 @@ resources:
               display: "Postnatal visit - newborn"
             class: "AMB"
             qty: 1
-            days_ago: 351
+            days_ago: 350
 
           # 6-week immunization visit
           - type:
